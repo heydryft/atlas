@@ -52,23 +52,35 @@ export function ConfigErrorBanner() {
 export function ConfigFileSection() {
   const generation = useSettingsStore.use.configGeneration();
   const [info, setInfo] = useState<ConfigInfo | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let live = true;
-    void getConfigInfo().then((next) => {
-      if (live) setInfo(next);
-    });
+    getConfigInfo()
+      .then((next) => {
+        if (!live) return;
+        setInfo(next);
+        setFailed(next === null);
+      })
+      .catch(() => {
+        if (live) setFailed(true);
+      });
     return () => {
       live = false;
     };
   }, [generation]);
 
   const unknown = info?.unknownKeys ?? [];
-  const status =
-    !info || info.status.status === "ok"
-      ? "Loaded cleanly."
-      : info.status.status === "usingLastKnownGood"
-        ? "Has an error; Atlas is running on the last settings that loaded."
-        : "Has an error; Atlas is running on its defaults.";
+  // Never "loaded cleanly" before the answer is in: this row is where a
+  // broken file is supposed to show.
+  const status = failed
+    ? "Couldn't read the file's status."
+    : !info
+      ? "Checking…"
+      : info.status.status === "ok"
+        ? "Loaded cleanly."
+        : info.status.status === "usingLastKnownGood"
+          ? "Has an error; Atlas is running on the last settings that loaded."
+          : "Has an error; Atlas is running on its defaults.";
 
   return (
     <SettingsSection

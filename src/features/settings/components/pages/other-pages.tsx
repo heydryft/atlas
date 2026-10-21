@@ -7,7 +7,6 @@ import { isLinux, isWindows } from "@/lib/platform";
 import { useAppProfile } from "@/lib/app-profile";
 import { Button } from "@/ui/button";
 import { AtlasIcon } from "@/components/atlas-icon";
-import { setEnabled as setTelemetryEnabled } from "@/features/telemetry/posthog-client";
 import { updater } from "@/features/updater/lib/updater-api";
 import { useUpdaterStore } from "@/features/updater/stores/updater-store";
 import { useSettingsStore } from "../../stores/settings-store";
@@ -60,14 +59,7 @@ export function PrivacyPage() {
           <SettingsRow
             setting="shareTelemetry"
             description="App launches, which agents and tools you use, how many files a turn touched, token counts and crashes, to help improve Atlas."
-            control={
-              <SettingSwitch
-                setting="shareTelemetry"
-                // Rust re-syncs its own gate on every settings commit; this
-                // flips the frontend-only crash reporter, which Rust can't reach.
-                onChange={setTelemetryEnabled}
-              />
-            }
+            control={<SettingSwitch setting="shareTelemetry" />}
           />
           <SettingsRow
             setting="linkTelemetryToAccount"

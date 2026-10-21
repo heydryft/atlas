@@ -140,15 +140,22 @@ export function SettingsRow({
     setting !== undefined && !noReset && !disabled && !isDefaultValue(setting, value);
   const ref = useSearchTarget(anchor ?? setting);
 
+  // `inert`, not just `pointer-events-none`: a disabled row's switch or select
+  // must not take focus or a Space/Enter from the keyboard either. The outer
+  // span keeps one tab stop so the reason is still reachable by keyboard.
   const controlNode =
     control && disabled && disabledReason ? (
       <Hint label={disabledReason}>
         <span className="inline-flex" tabIndex={0}>
-          <span className="pointer-events-none inline-flex disabled-look">{control}</span>
+          <span inert className="inline-flex disabled-look">
+            {control}
+          </span>
         </span>
       </Hint>
     ) : control && disabled ? (
-      <span className="pointer-events-none inline-flex disabled-look">{control}</span>
+      <span inert className="inline-flex disabled-look">
+        {control}
+      </span>
     ) : (
       control
     );
