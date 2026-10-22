@@ -14,6 +14,10 @@
  *   applies again.
  * - **A project, for any other key.** Shown read-only with the global value:
  *   it applies to every project.
+ * - **A tighten-only key that is off for all projects** (`project:
+ *   "tighten"`: an agent permission, a data-sending job). Read-only under a
+ *   project: a project can turn it off, never on, because a repository can
+ *   commit the file that would.
  */
 
 import { createContext, useContext, useEffect } from "react";
@@ -37,8 +41,10 @@ export function usePageScope(): string | null {
 
 export interface ScopedSetting<K extends SettingKey> {
   value: AppSettings[K];
-  /** Under a project scope, for a key it cannot override. */
+  /** Under a project scope, for a key it cannot change there. */
   globalOnly: boolean;
+  /** Why, when it is not simply a global-only key. */
+  lockedReason: string | null;
   /** Whether the reset button has something to undo. */
   resettable: boolean;
   /** "Reset to default" or "Reset to the value for all projects". */
@@ -68,11 +74,12 @@ export function useScopedSetting<K extends SettingKey>(key: K): ScopedSetting<K>
   const { update } = useProjectSettingsStore.use.actions();
   useLoadProjectSettings(scope);
 
-  const scopable = settingMeta(key)?.project === true;
+  const scopable = Boolean(settingMeta(key)?.project);
   if (scope === null || !scopable) {
     return {
       value: globalValue,
       globalOnly: scope !== null,
+      lockedReason: null,
       resettable: scope === null && !isDefaultValue(key, globalValue),
       resetLabel: "Reset to default",
       overridden: false,
@@ -83,9 +90,14 @@ export function useScopedSetting<K extends SettingKey>(key: K): ScopedSetting<K>
   }
   const values = byPath[scope]?.values ?? {};
   const overridden = key in values;
+  const tightenLocked =
+    settingMeta(key)?.project === "tighten" && globalValue === false && !overridden;
   return {
     value: projectValue(byPath, scope, key, settings),
-    globalOnly: false,
+    globalOnly: tightenLocked,
+    lockedReason: tightenLocked
+      ? "Off for all projects. A project can turn this off, never on: turn it on for all projects first."
+      : null,
     resettable: overridden,
     resetLabel: "Use the value for all projects",
     overridden,

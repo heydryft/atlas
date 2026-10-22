@@ -61,6 +61,12 @@ export function ScopeSentence() {
           {info && info.ignoredKeys.length > 0 && (
             <> Ignored there: {info.ignoredKeys.join(", ")}.</>
           )}
+          {info && info.refusedKeys.length > 0 && (
+            <>
+              {" "}
+              Not applied, because a project can only turn them off: {info.refusedKeys.join(", ")}.
+            </>
+          )}
         </p>
       )}
     </div>

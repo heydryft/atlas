@@ -168,18 +168,18 @@ bookkeeping).
 | `agentSwitchBehavior` | `"reset"` \| `"new-tab"` \| `"handoff"` | `"reset"` | Chat › Switching agents › Switching agents in a chat | exactly one of these three strings. An empty chat always switches in place and a running one always gets a new tab, whatever this says |
 | `rememberBeforeSwitch` | boolean | `false` | Chat › Switching agents › Save to memory before switching agents | — . Acts only on a chat with a conversation whose agent advertises `/remember` (the bundled `remember` skill); waits at most 3 minutes, and the user can switch at once |
 | `gitBlameInline` | boolean | `true` | Source Control › Editor › Inline Git blame (per project too) | — |
-| `gitAutoFetch` | boolean | `true` | Source Control › Repositories › Auto-fetch from remote (per project too) | — |
+| `gitAutoFetch` | boolean | `true` | Source Control › Repositories › Auto-fetch from remote (a project can turn it off) | — |
 | `keepAwakeWhileRunning` | boolean | `false` | General › Interface › Keep awake while an agent is working | no effect on Windows |
 | `autoUpdate` | boolean | `true` | Updates › Atlas › Automatic updates | — |
 | `curatedPluginSync` | boolean | `false` | Updates › Atlas Agent › Keep Atlas Agent's plugin catalog up to date | — |
 | `instructionSync` | boolean | `false` | Memory › Instructions › Mirror CLAUDE.md and .claude/rules into AGENTS.md | — . See [Mirrored instructions](#mirrored-instructions-instructionsync) |
 | `updaterIgnoredVersion` | string, or absent | absent | managed by Atlas | — |
 | `enterToSend` | boolean | `true` | Chat › Composer › Enter to send | — |
-| `agentUiNavigation` | boolean | `true` | Chat › Atlas Agent permissions › Let Atlas Agent navigate the app (per project too) | — |
-| `agentOrgAccess` | boolean | `true` | Chat › Atlas Agent permissions › Let Atlas Agent act in your organization (per project too) | — |
-| `agentCodeTools` | boolean | `true` | Chat › Atlas Agent permissions › Let agents search code with Atlas (per project too) | — |
-| `memoryDreams` | boolean | `false` | Memory › Shared memory › Nightly memory review (per project too) | — |
-| `memoryRepoMirror` | boolean | `false` | Memory › Shared memory › Mirror memory as an Agent Memory Repo (per project too) | — |
+| `agentUiNavigation` | boolean | `true` | Chat › Atlas Agent permissions › Let Atlas Agent navigate the app (a project can turn it off) | — |
+| `agentOrgAccess` | boolean | `true` | Chat › Atlas Agent permissions › Let Atlas Agent act in your organization (a project can turn it off) | — |
+| `agentCodeTools` | boolean | `true` | Chat › Atlas Agent permissions › Let agents search code with Atlas (a project can turn it off) | — |
+| `memoryDreams` | boolean | `false` | Memory › Shared memory › Nightly memory review (a project can turn it off) | — |
+| `memoryRepoMirror` | boolean | `false` | Memory › Shared memory › Mirror memory as an Agent Memory Repo (a project can turn it off) | — |
 | `atlasOnlyMemory` | boolean | `true` | Memory › Shared memory › Atlas is the only memory in Atlas sessions | — |
 | `terminalNotifyMinDurationMs` | integer | `10000` | Notifications › Notifications › Notify on command success after | 0 ≤ n ≤ 3600000 |
 | `notificationsEnabled` | boolean | `true` | Notifications › Notifications › Notifications | — |
@@ -290,7 +290,7 @@ write, immediately.
 A project can override a few keys in its own `.atlas/config.toml`
 (`.atlas-dev/` under the dev profile). The file is sparse — it holds only the
 keys that project changes — and lives in the directory Atlas keeps out of
-git, so an override belongs to the user, not the team.
+git, so an override normally belongs to the user, not the team.
 
 - **Eligible keys** are the ones the registry marks `project = true`, listed
   in the generated `PROJECT_SETTING_KEYS`. A key qualifies only when every
@@ -299,6 +299,13 @@ git, so an override belongs to the user, not the team.
   `gitAutoFetch`, `gitBlameInline`, `memoryDreams` and `memoryRepoMirror`.
   Any other key in a project file is left there, reported as ignored, and
   never applied.
+- **Tighten-only keys.** Nothing stops a repository from committing its
+  `.atlas/config.toml`, and a clone carries it. So every eligible key that
+  grants access or sends data — all of them except `gitBlameInline` — is
+  `project = "tighten"` (`PROJECT_TIGHTEN_ONLY_KEYS`): a project can turn it
+  off, never on while it is off for all projects. A file that tries is
+  refused for that key (`refusedKeys`), and Settings says so; the UI will not
+  write one either.
 - **Resolution** is one function, `state::project_config::resolve`: the
   global settings with each override laid over them, validated as a whole.
   A file that does not parse or validate is not applied at all, and Settings

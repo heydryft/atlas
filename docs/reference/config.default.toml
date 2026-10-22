@@ -86,8 +86,8 @@ gitBlameInline = true
 
 # Quietly `git fetch` the open project when it opens, when Atlas regains
 # focus, and every few minutes, so the Pull badge shows what the remote has.
-# Never pulls or touches your files. (default: true) A project can override it
-# in its own .atlas/config.toml.
+# Never pulls or touches your files. (default: true) A project can turn it
+# off, never on, in its own .atlas/config.toml.
 gitAutoFetch = true
 
 # Keep the computer awake while an Atlas agent is actively running. Prevents
@@ -121,15 +121,15 @@ enterToSend = true
 # Let Atlas Agent act on the window: open files at a line, switch tabs and
 # panels, fill in a chat message, type a command for you to run. It never
 # switches projects, sends for you or presses Enter. Off: its UI tools are
-# withdrawn and every call is refused. (default: true) A project can override
-# it in its own .atlas/config.toml.
+# withdrawn and every call is refused. (default: true) A project can turn it
+# off, never on, in its own .atlas/config.toml.
 agentUiNavigation = true
 
 # Let Atlas Agent act in your organization, as you: read the recorded
 # sessions, comments, members and conversations of the organization a
 # cloud-bound Project belongs to. Anything that reaches another person asks
 # you first. Off: its organization tools are withdrawn and every call is
-# refused. (default: true) A project can override it in its own
+# refused. (default: true) A project can turn it off, never on, in its own
 # .atlas/config.toml.
 agentOrgAccess = true
 
@@ -137,19 +137,20 @@ agentOrgAccess = true
 # files by name, in-process, respecting .gitignore and never reading secret
 # files such as .env. Off: the code tools are withdrawn and every call is
 # refused; agents use their own shell instead. (default: true) A project can
-# override it in its own .atlas/config.toml.
+# turn it off, never on, in its own .atlas/config.toml.
 agentCodeTools = true
 
 # Once a day, when there are new sessions, ask the memory model to propose
 # changes to shared memory (add, merge, archive, rewrite, link). Proposals
 # wait in Memory > Review; nothing is applied without you. Uses the same model
-# and consent as extraction. (default: false) A project can override it in its
-# own .atlas/config.toml.
+# and consent as extraction. (default: false) A project can turn it off, never
+# on, in its own .atlas/config.toml.
 memoryDreams = false
 
 # Keep a read-only Agent Memory Repo mirror of each project's active memory,
 # as a local git repository outside the project. No remote, nothing is pushed.
-# (default: false) A project can override it in its own .atlas/config.toml.
+# (default: false) A project can turn it off, never on, in its own
+# .atlas/config.toml.
 memoryRepoMirror = false
 
 # Atlas's shared memory is the only memory in Atlas sessions: agents that keep

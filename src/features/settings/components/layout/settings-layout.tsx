@@ -165,6 +165,7 @@ function InheritanceHint({ scoped }: { scoped: ScopedSetting<SettingKey> }) {
 const NO_SETTING = {
   value: undefined,
   globalOnly: false,
+  lockedReason: null,
   resettable: false,
   resetLabel: "",
   overridden: false,
@@ -199,7 +200,9 @@ export function SettingsRow({
   // not editable: a key it cannot set, or a row with no key at all.
   const globalOnly = scope !== null && (setting ? scoped.globalOnly : true);
   const disabled = disabledProp || globalOnly;
-  const disabledReason = globalOnly ? GLOBAL_ONLY_REASON : disabledReasonProp;
+  const disabledReason = globalOnly
+    ? (scoped.lockedReason ?? GLOBAL_ONLY_REASON)
+    : disabledReasonProp;
   const rowTitle = title ?? meta?.title;
   const showReset = setting !== undefined && !noReset && !disabled && scoped.resettable;
   const ref = useSearchTarget(anchor ?? setting);

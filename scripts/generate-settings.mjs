@@ -242,8 +242,10 @@ export function readSource(text = readFileSync(SOURCE, "utf8")) {
       problems.push(`${at}: \`ts_type\` and \`ts_import\` come together`);
     if (setting.type === "table" && setting.ts_type === undefined)
       problems.push(`${at}: a table needs a \`ts_type\``);
-    if (setting.project !== undefined && typeof setting.project !== "boolean")
-      problems.push(`${at}: \`project\` is true or false`);
+    if (setting.project !== undefined && ![true, false, "tighten"].includes(setting.project))
+      problems.push(`${at}: \`project\` is true, false or "tighten"`);
+    if (setting.project === "tighten" && setting.type !== "boolean")
+      problems.push(`${at}: only a boolean can be tighten-only`);
     if (setting.project && setting.status !== "live")
       problems.push(`${at}: only a live setting can be set per project`);
   }
@@ -320,7 +322,10 @@ export function configComment(setting) {
   if (ABSENT_BY_DEFAULT.has(setting.type)) text = `${setting.key}: ${text}`;
   const literal = tomlLiteral(setting);
   if (literal !== null) text = `${text} (default: ${literal})`;
-  if (setting.project) text = `${text} A project can override it in its own .atlas/config.toml.`;
+  if (setting.project === "tighten")
+    text = `${text} A project can turn it off, never on, in its own .atlas/config.toml.`;
+  else if (setting.project)
+    text = `${text} A project can override it in its own .atlas/config.toml.`;
   return wrap(text, COMMENT_WIDTH - 2)
     .map((line) => `# ${line}`)
     .join("\n");
@@ -343,6 +348,10 @@ function renderRust({ settings }) {
     .filter((setting) => setting.project)
     .map((setting) => `    "${setting.key}",`)
     .join("\n");
+  const tightenKeys = settings
+    .filter((setting) => setting.project === "tighten")
+    .map((setting) => `    "${setting.key}",`)
+    .join("\n");
   return `// ${GENERATED_NOTE}
 //
 // camelCase key → the comment written directly above it in a generated
@@ -353,10 +362,17 @@ const SETTINGS_DOCS: &[(&str, &str)] = &[
 ${entries}
 ];
 
-/// The keys a project's \`.atlas/config.toml\` may override (\`project = true\`
-/// in the registry). Any other key there is ignored and reported.
+/// The keys a project's \`.atlas/config.toml\` may override (\`project\` in the
+/// registry). Any other key there is ignored and reported.
 pub const PROJECT_SETTING_KEYS: &[&str] = &[
 ${projectKeys}
+];
+
+/// Of those, the booleans a project may only turn off (\`project = "tighten"\`):
+/// a repository can commit that file, so it never switches on what the user
+/// switched off.
+pub const PROJECT_TIGHTEN_ONLY_KEYS: &[&str] = &[
+${tightenKeys}
 ];
 `;
 }
@@ -413,7 +429,7 @@ function metaFor(setting) {
   if (setting.platforms) meta.platforms = setting.platforms;
   if (setting.applies) meta.applies = setting.applies;
   if (setting.set_in) meta.setIn = setting.set_in;
-  if (setting.project) meta.project = true;
+  if (setting.project) meta.project = setting.project;
   return meta;
 }
 
@@ -498,8 +514,9 @@ export interface SettingMeta {
   applies?: string;
   /** For \`elsewhere\`: where in the app it is changed. */
   setIn?: string;
-  /** A project's \`.atlas/config.toml\` can override it. */
-  project?: true;
+  /** A project's \`.atlas/config.toml\` can override it — \`"tighten"\`: only
+   *  turn it off. */
+  project?: true | "tighten";
 }
 
 export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
@@ -539,7 +556,7 @@ function docsWhere(setting, pages) {
   const page = pages.find((entry) => entry.id === setting.page);
   switch (setting.status) {
     case "live":
-      return `${page.title} › ${setting.section} › ${setting.title}${setting.project ? " (per project too)" : ""}`;
+      return `${page.title} › ${setting.section} › ${setting.title}${setting.project === "tighten" ? " (a project can turn it off)" : setting.project ? " (per project too)" : ""}`;
     case "elsewhere":
       return setting.set_in;
     case "file-only":

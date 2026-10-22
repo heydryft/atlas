@@ -269,7 +269,7 @@
       "section": "Repositories",
       "title": "Auto-fetch from remote",
       "summary": "Quietly fetch the open project so the Pull badge shows what the remote has. Never pulls.",
-      "project": true,
+      "project": "tighten",
       "default": "true",
       "doc": "Quietly `git fetch` the open project when it opens, when Atlas regains focus, and every few minutes, so the Pull badge shows what the remote has. Never pulls or touches your files.",
       "validation": "—"
@@ -359,7 +359,7 @@
       "section": "Atlas Agent permissions",
       "title": "Let Atlas Agent navigate the app",
       "summary": "Open files at a line, switch tabs and panels, and fill in a message or command for you.",
-      "project": true,
+      "project": "tighten",
       "default": "true",
       "doc": "Let Atlas Agent act on the window: open files at a line, switch tabs and panels, fill in a chat message, type a command for you to run. It never switches projects, sends for you or presses Enter. Off: its UI tools are withdrawn and every call is refused.",
       "validation": "—"
@@ -372,7 +372,7 @@
       "section": "Atlas Agent permissions",
       "title": "Let Atlas Agent act in your organization",
       "summary": "Read your organization's sessions, comments and conversations, and act there as you.",
-      "project": true,
+      "project": "tighten",
       "default": "true",
       "doc": "Let Atlas Agent act in your organization, as you: read the recorded sessions, comments, members and conversations of the organization a cloud-bound Project belongs to. Anything that reaches another person asks you first. Off: its organization tools are withdrawn and every call is refused.",
       "validation": "—"
@@ -385,7 +385,7 @@
       "section": "Atlas Agent permissions",
       "title": "Let agents search code with Atlas",
       "summary": "Give agents Atlas's in-process grep and find-files, which respect .gitignore and skip secrets.",
-      "project": true,
+      "project": "tighten",
       "default": "true",
       "doc": "Let agents search this project's code through Atlas: grep for text and find files by name, in-process, respecting .gitignore and never reading secret files such as .env. Off: the code tools are withdrawn and every call is refused; agents use their own shell instead.",
       "validation": "—"
@@ -398,7 +398,7 @@
       "section": "Shared memory",
       "title": "Nightly memory review",
       "summary": "Once a day, propose changes to shared memory for you to review. Nothing applies without you.",
-      "project": true,
+      "project": "tighten",
       "default": "false",
       "doc": "Once a day, when there are new sessions, ask the memory model to propose changes to shared memory (add, merge, archive, rewrite, link). Proposals wait in Memory > Review; nothing is applied without you. Uses the same model and consent as extraction.",
       "validation": "—"
@@ -411,7 +411,7 @@
       "section": "Shared memory",
       "title": "Mirror memory as an Agent Memory Repo",
       "summary": "Keep a read-only local git copy of each project's memory, outside the project.",
-      "project": true,
+      "project": "tighten",
       "default": "false",
       "doc": "Keep a read-only Agent Memory Repo mirror of each project's active memory, as a local git repository outside the project. No remote, nothing is pushed.",
       "validation": "—"

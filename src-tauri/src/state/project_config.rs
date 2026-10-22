@@ -7,7 +7,12 @@
 //! ignored, never applied.
 //!
 //! The file lives in `.atlas/`, which Atlas keeps out of git, so an override
-//! is the user's own, not the team's.
+//! is normally the user's own. Normally: nothing stops a repository from
+//! committing one, and a clone would then carry it. So a key that grants
+//! access or sends data (`PROJECT_TIGHTEN_ONLY_KEYS`: the agent permissions,
+//! the memory jobs, auto-fetch) can only be turned *off* by a project. A
+//! project file that tries to switch one on while the user has it off is
+//! refused for that key and reported.
 //!
 //! Resolution is one function, [`resolve`]: the global settings with each
 //! override laid over them, validated as a whole, plus the list of keys the
@@ -30,7 +35,7 @@ use serde_json::{Map, Value};
 
 use super::atlas_config::{
     document_added_keys, settings_keys_in, validate, write_atomic, AppSettings,
-    PROJECT_SETTING_KEYS,
+    PROJECT_SETTING_KEYS, PROJECT_TIGHTEN_ONLY_KEYS,
 };
 
 pub const PROJECT_CONFIG_FILE: &str = "config.toml";
@@ -64,6 +69,9 @@ pub struct ProjectOverrides {
     /// Keys in the file that cannot be set per project, or that Atlas does
     /// not know. Left in the file; never applied.
     pub ignored_keys: Vec<String>,
+    /// Tighten-only keys the file tries to switch on while the global value
+    /// is off. Never applied: a project can only turn these off.
+    pub refused_keys: Vec<String>,
     /// Why the file is not being applied at all (bad TOML, a value that
     /// fails validation). `values` is empty while this is set.
     pub error: Option<String>,
@@ -71,6 +79,16 @@ pub struct ProjectOverrides {
 
 fn is_project_key(key: &str) -> bool {
     PROJECT_SETTING_KEYS.contains(&key)
+}
+
+/// Whether `value` for `key` would switch on, from a project file, something
+/// the user has off for all projects.
+fn loosens(key: &str, value: &Value, global: &AppSettings) -> bool {
+    if !PROJECT_TIGHTEN_ONLY_KEYS.contains(&key) || value != &Value::Bool(true) {
+        return false;
+    }
+    let global = serde_json::to_value(global).unwrap_or(Value::Null);
+    global.get(key) == Some(&Value::Bool(false))
 }
 
 fn toml_to_json(value: &toml::Value) -> Value {
@@ -93,22 +111,28 @@ pub fn parse_overrides(raw: &str, global: &AppSettings) -> ProjectOverrides {
     };
     let mut values = Map::new();
     let mut ignored_keys = Vec::new();
+    let mut refused_keys = Vec::new();
     for (key, value) in settings {
-        if is_project_key(key) {
-            values.insert(key.clone(), toml_to_json(value));
-        } else {
+        let value = toml_to_json(value);
+        if !is_project_key(key) {
             ignored_keys.push(key.clone());
+        } else if loosens(key, &value, global) {
+            refused_keys.push(key.clone());
+        } else {
+            values.insert(key.clone(), value);
         }
     }
     match apply(global, &values) {
         Ok(_) => ProjectOverrides {
             values,
             ignored_keys,
+            refused_keys,
             error: None,
         },
         Err(error) => ProjectOverrides {
             values: Map::new(),
             ignored_keys,
+            refused_keys,
             error: Some(error),
         },
     }
@@ -148,9 +172,14 @@ pub fn write_patch(
     global: &AppSettings,
     patch: &Map<String, Value>,
 ) -> Result<ProjectOverrides, String> {
-    for key in patch.keys() {
+    for (key, value) in patch {
         if !is_project_key(key) {
             return Err(format!("{key} cannot be set per project"));
+        }
+        if loosens(key, value, global) {
+            return Err(format!(
+                "{key} is off for all projects; a project can only turn it off"
+            ));
         }
     }
     let path = project_config_path(project_root);
@@ -391,6 +420,46 @@ mod tests {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(&path, "[settings]\ngitAutoFetch = false\n").unwrap();
         assert!(!configs.effective(dir.path(), &global).git_auto_fetch);
+    }
+
+    /// A cloned repository can carry a committed `.atlas/config.toml`. It must
+    /// not switch on an agent permission or a data-sending job the user has
+    /// off — but turning one off, or setting a harmless key, still applies.
+    #[test]
+    fn a_project_file_can_tighten_a_permission_but_never_loosen_it() {
+        let global = AppSettings {
+            agent_code_tools: false,
+            agent_org_access: true,
+            ..AppSettings::default()
+        };
+        let raw =
+            "[settings]\nagentCodeTools = true\nagentOrgAccess = false\ngitBlameInline = false\n";
+        let overrides = parse_overrides(raw, &global);
+        assert_eq!(overrides.refused_keys, vec!["agentCodeTools"]);
+        let (effective, sources) = resolve(&global, &overrides);
+        assert!(!effective.agent_code_tools, "stays off");
+        assert!(!effective.agent_org_access, "tightened");
+        assert!(!effective.git_blame_inline);
+        assert_eq!(sources.len(), 2);
+
+        let dir = project();
+        let error = write_patch(
+            dir.path(),
+            &global,
+            &patch(&[("agentCodeTools", Value::Bool(true))]),
+        )
+        .unwrap_err();
+        assert!(error.contains("can only turn it off"));
+        assert!(!project_config_path(dir.path()).exists());
+    }
+
+    #[test]
+    fn every_tighten_only_key_is_a_project_boolean() {
+        let defaults = serde_json::to_value(AppSettings::default()).unwrap();
+        for key in PROJECT_TIGHTEN_ONLY_KEYS {
+            assert!(PROJECT_SETTING_KEYS.contains(key), "{key}");
+            assert!(defaults[*key].is_boolean(), "{key}");
+        }
     }
 
     /// Every per-project key is a real setting whose type survives a round

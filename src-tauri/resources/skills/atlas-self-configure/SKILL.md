@@ -28,16 +28,18 @@ If the file does not exist yet, Atlas hasn't created it (a fresh install
 before first launch, or the user deleted it). Do not create one speculatively
 — report that to the user instead of guessing at defaults.
 
-## One project only: `.atlas/config.toml`
+## One project only: the project's own config.toml
 
-A project can override a few keys for itself in
-`<project>/.atlas/config.toml` (`.atlas-dev/` in a development build). Use it
-only when the user asks for a change in *this project* rather than
-everywhere. Its header says what it is; the rules:
+A project can override a few keys for itself in a `config.toml` inside the
+project's `.atlas/` directory. Use it only when the user asks for a change in
+*this project* rather than everywhere. Its header says what it is; the rules:
 
 - It holds only the keys the project changes. The allowed keys are the ones
-  whose comment in the global file ends "A project can override it in its own
-  .atlas/config.toml." Atlas ignores any other key there.
+  whose comment in the global file says a project can override it. Atlas
+  ignores any other key there.
+- Some of those a project can only turn **off** (the comment says "never
+  on"). If the user wants one on for a single project while it's off
+  everywhere else, say that Atlas won't honour it and stop.
 - Delete a key's line to go back to the global value.
 - The same care applies as below: read first, explain, change only your
   lines, write atomically. It may not exist yet; unlike the global file,

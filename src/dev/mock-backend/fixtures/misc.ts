@@ -294,6 +294,7 @@ const projectSettingsFor = (projectPath: string): ProjectSettingsInfo =>
     path: `${projectPath}/.atlas/config.toml`,
     values: {},
     ignoredKeys: [],
+    refusedKeys: [],
     error: null,
   };
 

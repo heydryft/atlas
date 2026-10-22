@@ -16,6 +16,10 @@ export interface ProjectSettingsInfo {
   values: Partial<AppSettings>;
   /** Keys in the file that cannot be set per project; left there, never applied. */
   ignoredKeys: string[];
+  /** Keys a project may only turn off that the file tries to switch on while
+   *  they are off for all projects. Never applied: a repository can commit
+   *  this file, so it must not grant what the user withheld. */
+  refusedKeys: string[];
   /** Why nothing in the file is applied (bad TOML, an invalid value). */
   error: string | null;
 }

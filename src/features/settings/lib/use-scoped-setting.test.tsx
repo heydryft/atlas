@@ -28,6 +28,7 @@ const info = (values: ProjectSettingsInfo["values"]): ProjectSettingsInfo => ({
   path: `${PROJECT}/.atlas/config.toml`,
   values,
   ignoredKeys: [],
+  refusedKeys: [],
   error: null,
 });
 
@@ -90,6 +91,22 @@ describe("useScopedSetting", () => {
     act(() => result.current.reset());
     expect(updateProjectSettings).toHaveBeenLastCalledWith(PROJECT, { gitAutoFetch: null });
     expect(updateSettings).not.toHaveBeenCalled();
+  });
+
+  it("locks a tighten-only key that is off for all projects", () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, agentCodeTools: false } });
+    const { result } = renderHook(() => useScopedSetting("agentCodeTools"), {
+      wrapper: inScope(PROJECT),
+    });
+    expect(result.current.globalOnly).toBe(true);
+    expect(result.current.lockedReason).toMatch(/never on/);
+  });
+
+  it("lets a project turn a tighten-only key off", () => {
+    const { result } = renderHook(() => useScopedSetting("agentCodeTools"), {
+      wrapper: inScope(PROJECT),
+    });
+    expect(result.current.globalOnly).toBe(false);
   });
 
   it("marks a key a project cannot set as global-only", () => {

@@ -71,7 +71,7 @@ const SETTINGS_DOCS: &[(&str, &str)] = &[
     ),
     (
         "gitAutoFetch",
-        "# Quietly `git fetch` the open project when it opens, when Atlas regains\n# focus, and every few minutes, so the Pull badge shows what the remote has.\n# Never pulls or touches your files. (default: true) A project can override it\n# in its own .atlas/config.toml.",
+        "# Quietly `git fetch` the open project when it opens, when Atlas regains\n# focus, and every few minutes, so the Pull badge shows what the remote has.\n# Never pulls or touches your files. (default: true) A project can turn it\n# off, never on, in its own .atlas/config.toml.",
     ),
     (
         "keepAwakeWhileRunning",
@@ -99,23 +99,23 @@ const SETTINGS_DOCS: &[(&str, &str)] = &[
     ),
     (
         "agentUiNavigation",
-        "# Let Atlas Agent act on the window: open files at a line, switch tabs and\n# panels, fill in a chat message, type a command for you to run. It never\n# switches projects, sends for you or presses Enter. Off: its UI tools are\n# withdrawn and every call is refused. (default: true) A project can override\n# it in its own .atlas/config.toml.",
+        "# Let Atlas Agent act on the window: open files at a line, switch tabs and\n# panels, fill in a chat message, type a command for you to run. It never\n# switches projects, sends for you or presses Enter. Off: its UI tools are\n# withdrawn and every call is refused. (default: true) A project can turn it\n# off, never on, in its own .atlas/config.toml.",
     ),
     (
         "agentOrgAccess",
-        "# Let Atlas Agent act in your organization, as you: read the recorded\n# sessions, comments, members and conversations of the organization a\n# cloud-bound Project belongs to. Anything that reaches another person asks\n# you first. Off: its organization tools are withdrawn and every call is\n# refused. (default: true) A project can override it in its own\n# .atlas/config.toml.",
+        "# Let Atlas Agent act in your organization, as you: read the recorded\n# sessions, comments, members and conversations of the organization a\n# cloud-bound Project belongs to. Anything that reaches another person asks\n# you first. Off: its organization tools are withdrawn and every call is\n# refused. (default: true) A project can turn it off, never on, in its own\n# .atlas/config.toml.",
     ),
     (
         "agentCodeTools",
-        "# Let agents search this project's code through Atlas: grep for text and find\n# files by name, in-process, respecting .gitignore and never reading secret\n# files such as .env. Off: the code tools are withdrawn and every call is\n# refused; agents use their own shell instead. (default: true) A project can\n# override it in its own .atlas/config.toml.",
+        "# Let agents search this project's code through Atlas: grep for text and find\n# files by name, in-process, respecting .gitignore and never reading secret\n# files such as .env. Off: the code tools are withdrawn and every call is\n# refused; agents use their own shell instead. (default: true) A project can\n# turn it off, never on, in its own .atlas/config.toml.",
     ),
     (
         "memoryDreams",
-        "# Once a day, when there are new sessions, ask the memory model to propose\n# changes to shared memory (add, merge, archive, rewrite, link). Proposals\n# wait in Memory > Review; nothing is applied without you. Uses the same model\n# and consent as extraction. (default: false) A project can override it in its\n# own .atlas/config.toml.",
+        "# Once a day, when there are new sessions, ask the memory model to propose\n# changes to shared memory (add, merge, archive, rewrite, link). Proposals\n# wait in Memory > Review; nothing is applied without you. Uses the same model\n# and consent as extraction. (default: false) A project can turn it off, never\n# on, in its own .atlas/config.toml.",
     ),
     (
         "memoryRepoMirror",
-        "# Keep a read-only Agent Memory Repo mirror of each project's active memory,\n# as a local git repository outside the project. No remote, nothing is pushed.\n# (default: false) A project can override it in its own .atlas/config.toml.",
+        "# Keep a read-only Agent Memory Repo mirror of each project's active memory,\n# as a local git repository outside the project. No remote, nothing is pushed.\n# (default: false) A project can turn it off, never on, in its own\n# .atlas/config.toml.",
     ),
     (
         "atlasOnlyMemory",
@@ -179,10 +179,22 @@ const SETTINGS_DOCS: &[(&str, &str)] = &[
     ),
 ];
 
-/// The keys a project's `.atlas/config.toml` may override (`project = true`
-/// in the registry). Any other key there is ignored and reported.
+/// The keys a project's `.atlas/config.toml` may override (`project` in the
+/// registry). Any other key there is ignored and reported.
 pub const PROJECT_SETTING_KEYS: &[&str] = &[
     "gitBlameInline",
+    "gitAutoFetch",
+    "agentUiNavigation",
+    "agentOrgAccess",
+    "agentCodeTools",
+    "memoryDreams",
+    "memoryRepoMirror",
+];
+
+/// Of those, the booleans a project may only turn off (`project = "tighten"`):
+/// a repository can commit that file, so it never switches on what the user
+/// switched off.
+pub const PROJECT_TIGHTEN_ONLY_KEYS: &[&str] = &[
     "gitAutoFetch",
     "agentUiNavigation",
     "agentOrgAccess",
