@@ -276,12 +276,16 @@ export const useSettingsStore = createSelectors(
 // (`author-directory.test.ts` via the org directory), where Tauri's `listen`
 // throws on the missing `window` — and `void` turned that into an unhandled
 // rejection that failed the whole run.
+//
+// A `window` without Tauri (a happy-dom test that imports this through the
+// chat store) rejects instead, so the rejection is caught and reported rather
+// than left unhandled, which vitest fails the run on.
 if (typeof window !== "undefined") {
-  void onConfigChanged(({ settings, generation }) => {
+  onConfigChanged(({ settings, generation }) => {
     const previous = useSettingsStore.getState().settings;
     useSettingsStore.setState({ settings, configGeneration: generation, configError: null });
     applySettingsSideEffects(settings, previous);
-  });
+  }).catch(warnNoListener);
 }
 
 // Every theme apply — a settings change, the OS flipping appearance under
@@ -294,10 +298,14 @@ if (typeof window !== "undefined") {
   });
 }
 
+function warnNoListener(error: unknown): void {
+  console.warn("settings: can't listen for config.toml changes", error);
+}
+
 // A malformed external edit (or a write Rust rejected) — `settings` is
 // unchanged, this is purely "tell the user".
 if (typeof window !== "undefined") {
-  void onConfigError((error) => {
+  onConfigError((error) => {
     useSettingsStore.setState({ configError: error });
-  });
+  }).catch(warnNoListener);
 }
