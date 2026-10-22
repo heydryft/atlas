@@ -102,6 +102,15 @@ describe("useScopedSetting", () => {
     expect(result.current.lockedReason).toMatch(/never on/);
   });
 
+  it("keeps a tighten-only row locked, but resettable, when the project already turned it off", () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, agentCodeTools: false } });
+    useProjectSettingsStore.setState({ byPath: { [PROJECT]: info({ agentCodeTools: false }) } });
+    const { result } = renderHook(() => useScopedSetting("agentCodeTools"), {
+      wrapper: inScope(PROJECT),
+    });
+    expect(result.current).toMatchObject({ globalOnly: true, overridden: true, resettable: true });
+  });
+
   it("lets a project turn a tighten-only key off", () => {
     const { result } = renderHook(() => useScopedSetting("agentCodeTools"), {
       wrapper: inScope(PROJECT),

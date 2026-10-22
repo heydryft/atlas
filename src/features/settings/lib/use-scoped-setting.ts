@@ -90,8 +90,10 @@ export function useScopedSetting<K extends SettingKey>(key: K): ScopedSetting<K>
   }
   const values = byPath[scope]?.values ?? {};
   const overridden = key in values;
-  const tightenLocked =
-    settingMeta(key)?.project === "tighten" && globalValue === false && !overridden;
+  // Locked even with an override in place (an "off" set before the global
+  // value went off too): switching it on would be refused. Reset stays
+  // available to drop the redundant override.
+  const tightenLocked = settingMeta(key)?.project === "tighten" && globalValue === false;
   return {
     value: projectValue(byPath, scope, key, settings),
     globalOnly: tightenLocked,

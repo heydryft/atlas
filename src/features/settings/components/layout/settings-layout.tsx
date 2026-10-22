@@ -204,7 +204,14 @@ export function SettingsRow({
     ? (scoped.lockedReason ?? GLOBAL_ONLY_REASON)
     : disabledReasonProp;
   const rowTitle = title ?? meta?.title;
-  const showReset = setting !== undefined && !noReset && !disabled && scoped.resettable;
+  // A tighten-locked row keeps its reset: the override it can drop is
+  // redundant, and dropping it is the one change still allowed.
+  const showReset =
+    setting !== undefined &&
+    !noReset &&
+    scoped.resettable &&
+    !disabledProp &&
+    (!globalOnly || scoped.lockedReason !== null);
   const ref = useSearchTarget(anchor ?? setting);
 
   // `inert`, not just `pointer-events-none`: a disabled row's switch or select
