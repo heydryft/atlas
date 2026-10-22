@@ -169,18 +169,18 @@ pub fn run() {
         }
     }));
 
-    // Custom menu: replaces the default Window ▸ Close (Cmd+W) with a
-    // "Close Tab" item so Cmd+W in a focused embedded browser webview closes
-    // the tab instead of tearing down the window. See `menu.rs`.
+    // The app menu bar, built from `menu.json`; every custom item hands its
+    // id to the renderer, which runs it. See `menu.rs`.
     //
-    // macOS only. Elsewhere a menu is a Win32/GTK menu bar drawn inside the
-    // window under Atlas's own titlebar, and the key-equivalent fallthrough it
-    // exists to catch is AppKit behaviour.
+    // macOS only. Elsewhere a native menu is a Win32/GTK bar drawn inside the
+    // window under Atlas's own titlebar, so the frontend draws the same model
+    // in that titlebar instead (`src/features/menu/`).
     #[cfg(target_os = "macos")]
     let builder = builder.menu(menu::build).on_menu_event(|app, event| {
-        if event.id() == menu::CLOSE_TAB_ID {
+        let id = event.id().as_ref();
+        if menu::is_custom(app, id) {
             use tauri::Emitter;
-            let _ = app.emit("atlas:close-active-tab", ());
+            let _ = app.emit(menu::MENU_EVENT, id);
         }
     });
 
@@ -876,7 +876,7 @@ pub fn run() {
             commands::keybindings::keybindings_load,
             commands::keybindings::keybindings_save,
             commands::keybindings::keybindings_open,
-            commands::keybindings::keybindings_set_close_tab_accelerator,
+            commands::keybindings::menu_set_accelerators,
             commands::memory_graph::memory_embed_status,
             commands::memory_graph::memory_embed_download,
             commands::memory_graph::memory_index_build,
