@@ -279,11 +279,3 @@ diffFilesCollapsed = false
 # red, "blue-orange" uses its blue and orange, which stay distinct with
 # red-green colour blindness. (default: "theme")
 diffPalette = "theme"
-
-# Where a link clicked in a chat or the terminal opens: "system" in your
-# default browser, "atlas" in a browser tab inside Atlas. (default: "system")
-linkTarget = "system"
-
-# What the built-in browser's address bar searches with when what you type
-# isn't an address. (default: "google")
-browserSearchEngine = "google"

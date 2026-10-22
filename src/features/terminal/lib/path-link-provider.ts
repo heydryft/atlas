@@ -2,7 +2,6 @@ import type { Terminal, ILink, ILinkProvider } from "@xterm/xterm";
 import { invoke } from "@tauri-apps/api/core";
 import { openFileOrReveal } from "@/lib/open-file";
 import { splitLinks, normalizeUrl } from "./linkify-paths";
-import { openLink } from "@/features/browser/lib/open-link";
 
 /**
  * xterm link provider that makes URLs and file paths in terminal output
@@ -77,7 +76,9 @@ export function createPathLinkProvider(term: Terminal, terminalId: string): ILin
             // Require ⌘ (mac) / Ctrl (win/linux) so normal clicks/selection work.
             if (!(event.metaKey || event.ctrlKey)) return;
             if (isUrl) {
-              void openLink(normalizeUrl(raw)).catch(() => {});
+              void import("@tauri-apps/plugin-opener")
+                .then(({ openUrl }) => openUrl(normalizeUrl(raw)))
+                .catch(() => {});
               return;
             }
             void invoke<string | null>("terminal_resolve_path", {

@@ -20,7 +20,6 @@ import { useCommsStore } from "@/features/comms/stores/comms-store";
 import { conversationTitle } from "@/features/comms/lib/derive";
 import { spacesApi } from "@/features/spaces/lib/spaces-api";
 import { openSpaceOnPage } from "@/features/spaces/lib/open-space";
-import { openInBrowserTab } from "@/features/browser/lib/open-link";
 import { readArgs, refuse } from "./args";
 import { activeProject, resolvePath, tabInScope } from "./scope";
 import type { UiActionRequest } from "./types";
@@ -127,7 +126,15 @@ export async function performOpen(request: UiActionRequest): Promise<unknown> {
     }
     case "url": {
       const url = a.str("url");
-      return { tabId: openInBrowserTab(url), url };
+      const { focusedGroupId, tabs } = layout();
+      const existing = tabs.find(
+        (t) => t.type === "browser" && (t.groupId ?? "main") === focusedGroupId,
+      );
+      const tabId = openPlainTab("browser", { url });
+      // A mounted browser tab read its URL once, when it mounted.
+      if (existing)
+        window.dispatchEvent(new CustomEvent("atlas:browser-navigate", { detail: { tabId, url } }));
+      return { tabId, url };
     }
     case "knowledge": {
       const noteId = a.str("noteId");

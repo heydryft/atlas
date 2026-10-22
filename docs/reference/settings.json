@@ -4,7 +4,7 @@
     {
       "id": "general",
       "title": "General",
-      "description": "Interface, fonts, confirmations, the built-in browser, and how Atlas treats your project's files."
+      "description": "Interface, fonts, confirmations, and how Atlas treats your project's files."
     },
     {
       "id": "appearance",
@@ -791,41 +791,6 @@
       "default": "\"theme\"",
       "doc": "The colours for added and removed lines: \"theme\" uses the theme's green and red, \"blue-orange\" uses its blue and orange, which stay distinct with red-green colour blindness.",
       "validation": "exactly one of these two strings"
-    },
-    {
-      "key": "linkTarget",
-      "type": "enum",
-      "status": "live",
-      "page": "general",
-      "section": "Browser",
-      "title": "Open links in",
-      "summary": "Open links from chats and the terminal in your browser or in Atlas's.",
-      "values": [
-        "system",
-        "atlas"
-      ],
-      "default": "\"system\"",
-      "doc": "Where a link clicked in a chat or the terminal opens: \"system\" in your default browser, \"atlas\" in a browser tab inside Atlas.",
-      "validation": "exactly one of these two strings"
-    },
-    {
-      "key": "browserSearchEngine",
-      "type": "enum",
-      "status": "live",
-      "page": "general",
-      "section": "Browser",
-      "title": "Search engine",
-      "summary": "What the built-in browser searches with when you type words, not an address.",
-      "values": [
-        "google",
-        "duckduckgo",
-        "bing",
-        "brave",
-        "kagi"
-      ],
-      "default": "\"google\"",
-      "doc": "What the built-in browser's address bar searches with when what you type isn't an address.",
-      "validation": "exactly one of these five strings"
     }
   ]
 }

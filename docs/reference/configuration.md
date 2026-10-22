@@ -209,8 +209,6 @@ bookkeeping).
 | `diffIgnoreWhitespace` | boolean | `false` | Source Control › Diffs › Hide whitespace changes | — |
 | `diffFilesCollapsed` | boolean | `false` | Source Control › Diffs › Start files collapsed | — |
 | `diffPalette` | `"theme"` \| `"blue-orange"` | `"theme"` | Source Control › Diffs › Diff colours | exactly one of these two strings |
-| `linkTarget` | `"system"` \| `"atlas"` | `"system"` | General › Browser › Open links in | exactly one of these two strings |
-| `browserSearchEngine` | `"google"` \| `"duckduckgo"` \| `"bing"` \| `"brave"` \| `"kagi"` | `"google"` | General › Browser › Search engine | exactly one of these five strings |
 
 <!-- /generated:settings -->
 

@@ -40,7 +40,6 @@ import { CommandInput, type CommandInputHandle } from "./command-input";
 import { TerminalStopControl } from "./terminal-stop-control";
 import { useTerminalStore } from "../stores/terminal-store";
 import { fetchTermGit, type TermGit } from "../lib/term-git";
-import { openLink as openUrlLink } from "@/features/browser/lib/open-link";
 
 export type { RawGitStatus } from "../lib/term-git";
 
@@ -793,7 +792,9 @@ const LineList = memo(function LineList({
     [cwd],
   );
   const openLink = useCallback((raw: string) => {
-    void openUrlLink(normalizeUrl(raw)).catch(() => {});
+    void import("@tauri-apps/plugin-opener")
+      .then(({ openUrl }) => openUrl(normalizeUrl(raw)))
+      .catch(() => {});
   }, []);
 
   return (

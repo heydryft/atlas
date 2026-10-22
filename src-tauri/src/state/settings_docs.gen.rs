@@ -233,14 +233,6 @@ const SETTINGS_DOCS: &[(&str, &str)] = &[
         "diffPalette",
         "# The colours for added and removed lines: \"theme\" uses the theme's green and\n# red, \"blue-orange\" uses its blue and orange, which stay distinct with\n# red-green colour blindness. (default: \"theme\")",
     ),
-    (
-        "linkTarget",
-        "# Where a link clicked in a chat or the terminal opens: \"system\" in your\n# default browser, \"atlas\" in a browser tab inside Atlas. (default: \"system\")",
-    ),
-    (
-        "browserSearchEngine",
-        "# What the built-in browser's address bar searches with when what you type\n# isn't an address. (default: \"google\")",
-    ),
 ];
 
 /// The keys a project's `.atlas/config.toml` may override (`project` in the

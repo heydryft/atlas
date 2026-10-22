@@ -29,18 +29,6 @@ const TIME_FORMATS = [
   { value: "24h", label: "24-hour" },
 ] as const;
 
-const LINK_TARGETS = [
-  { value: "system", label: "Your browser" },
-  { value: "atlas", label: "Atlas" },
-] as const;
-
-const SEARCH_ENGINES = [
-  { value: "google", label: "Google" },
-  { value: "duckduckgo", label: "DuckDuckGo" },
-  { value: "bing", label: "Bing" },
-  { value: "brave", label: "Brave Search" },
-  { value: "kagi", label: "Kagi" },
-] as const;
 import { ConfigErrorBanner } from "./config-file";
 
 export function GeneralPage() {
@@ -54,7 +42,7 @@ export function GeneralPage() {
   return (
     <SettingsPage
       title="General"
-      description="Interface, fonts, confirmations, the built-in browser, and how Atlas treats your project's files."
+      description="Interface, fonts, confirmations, and how Atlas treats your project's files."
     >
       <ConfigErrorBanner />
 
@@ -122,19 +110,6 @@ export function GeneralPage() {
           <SettingsRow
             setting="confirmQuitWhileRunning"
             control={<SettingSwitch setting="confirmQuitWhileRunning" />}
-          />
-        </SettingsGroup>
-      </SettingsSection>
-
-      <SettingsSection title="Browser">
-        <SettingsGroup>
-          <SettingsRow
-            setting="linkTarget"
-            control={<SettingSelect setting="linkTarget" options={LINK_TARGETS} />}
-          />
-          <SettingsRow
-            setting="browserSearchEngine"
-            control={<SettingSelect setting="browserSearchEngine" options={SEARCH_ENGINES} />}
           />
         </SettingsGroup>
       </SettingsSection>

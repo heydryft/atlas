@@ -276,27 +276,6 @@ pub enum SidebarSort {
     Created,
 }
 
-/// Where a link clicked in a chat or a terminal opens.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum LinkTarget {
-    #[default]
-    System,
-    Atlas,
-}
-
-/// What the built-in browser's address bar searches with.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum SearchEngine {
-    #[default]
-    Google,
-    Duckduckgo,
-    Bing,
-    Brave,
-    Kagi,
-}
-
 /// User-facing toggles surfaced in Settings → General. Moved out of
 /// `state.json`'s `AppState.settings` (issue #64) into its own validated,
 /// human-editable `config.toml`.
@@ -540,12 +519,6 @@ pub struct AppSettings {
     /// Diff colours.
     #[serde(default)]
     pub diff_palette: DiffPalette,
-    /// Where chat and terminal links open.
-    #[serde(default)]
-    pub link_target: LinkTarget,
-    /// The built-in browser's search engine.
-    #[serde(default)]
-    pub browser_search_engine: SearchEngine,
 }
 
 fn default_true() -> bool {
@@ -648,8 +621,6 @@ impl Default for AppSettings {
             diff_ignore_whitespace: false,
             diff_files_collapsed: false,
             diff_palette: DiffPalette::default(),
-            link_target: LinkTarget::default(),
-            browser_search_engine: SearchEngine::default(),
         }
     }
 }
@@ -1082,8 +1053,6 @@ pub struct SettingsPatch {
     pub diff_ignore_whitespace: Option<bool>,
     pub diff_files_collapsed: Option<bool>,
     pub diff_palette: Option<DiffPalette>,
-    pub link_target: Option<LinkTarget>,
-    pub browser_search_engine: Option<SearchEngine>,
 }
 
 impl SettingsPatch {
@@ -1239,8 +1208,6 @@ impl SettingsPatch {
             diff_ignore_whitespace,
             diff_files_collapsed,
             diff_palette,
-            link_target,
-            browser_search_engine,
         );
     }
 
@@ -1318,8 +1285,6 @@ impl SettingsPatch {
         set_enum!(sidebar_sort, "sidebarSort");
         set_enum!(time_format, "timeFormat");
         set_enum!(diff_palette, "diffPalette");
-        set_enum!(link_target, "linkTarget");
-        set_enum!(browser_search_engine, "browserSearchEngine");
         if let Some(v) = self.editor_font_size {
             table["editorFontSize"] = toml_edit::value(i64::from(v));
         }
@@ -2423,8 +2388,6 @@ someFutureKey = \"left alone\"
             diff_ignore_whitespace: Some(!defaults.diff_ignore_whitespace),
             diff_files_collapsed: Some(!defaults.diff_files_collapsed),
             diff_palette: Some(DiffPalette::BlueOrange),
-            link_target: Some(LinkTarget::Atlas),
-            browser_search_engine: Some(SearchEngine::Duckduckgo),
         };
         let mut expected = defaults.clone();
         patch.apply_to(&mut expected);

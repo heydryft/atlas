@@ -283,13 +283,6 @@ export interface AppSettings {
    * blindness.
    */
   diffPalette: "theme" | "blue-orange";
-  /**
-   * Where a link clicked in a chat or the terminal opens: "system" in your default browser,
-   * "atlas" in a browser tab inside Atlas.
-   */
-  linkTarget: "system" | "atlas";
-  /** What the built-in browser's address bar searches with when what you type isn't an address. */
-  browserSearchEngine: "google" | "duckduckgo" | "bing" | "brave" | "kagi";
 }
 
 export type SettingKey = keyof AppSettings;
@@ -352,8 +345,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   diffIgnoreWhitespace: false,
   diffFilesCollapsed: false,
   diffPalette: "theme",
-  linkTarget: "system",
-  browserSearchEngine: "google",
 };
 
 export type SettingType =
@@ -377,8 +368,7 @@ export const SETTINGS_PAGES = [
   {
     id: "general",
     title: "General",
-    description:
-      "Interface, fonts, confirmations, the built-in browser, and how Atlas treats your project's files.",
+    description: "Interface, fonts, confirmations, and how Atlas treats your project's files.",
   },
   {
     id: "appearance",
@@ -1000,25 +990,5 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
     title: "Diff colours",
     summary: "Use the theme's green and red for changes, or blue and orange.",
     values: ["theme", "blue-orange"],
-  },
-  {
-    key: "linkTarget",
-    type: "enum",
-    status: "live",
-    page: "general",
-    section: "Browser",
-    title: "Open links in",
-    summary: "Open links from chats and the terminal in your browser or in Atlas's.",
-    values: ["system", "atlas"],
-  },
-  {
-    key: "browserSearchEngine",
-    type: "enum",
-    status: "live",
-    page: "general",
-    section: "Browser",
-    title: "Search engine",
-    summary: "What the built-in browser searches with when you type words, not an address.",
-    values: ["google", "duckduckgo", "bing", "brave", "kagi"],
   },
 ];
