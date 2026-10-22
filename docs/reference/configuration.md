@@ -12,7 +12,7 @@ below. See [The settings registry](#the-settings-registry) and
   default, bounds, Settings location and comment. Everything else below is
   generated from it or tested against it.
 - **Source of truth (Rust):** `src-tauri/src/state/atlas_config.rs`
-  (schema, defaults, validation, migration) and
+  (schema, defaults, validation) and
   `src-tauri/src/commands/atlas_config.rs` (Tauri commands + file watcher).
 - **Frontend wrapper:** `src/features/settings/lib/atlas-config-api.ts`.
 - **Design context:** GitHub issue #64.
@@ -119,8 +119,8 @@ Note `updaterIgnoredVersion`: a key that serializes to nothing still gets its
 comment, carried down onto the next key that is present. Otherwise the one key
 whose *absence* carries meaning would be the one key nothing explains.
 
-Comments are only ever written into a file Atlas generates — first migration,
-or "Recreate defaults". Atlas never injects them into a file a user or agent
+Comments are only ever written into a file Atlas generates — first run, or
+"Recreate defaults" — and above a key Atlas adds to an existing file. Atlas never injects them into a file a user or agent
 wrote; `toml_edit` just preserves whatever comments are already there.
 
 ## The settings registry
@@ -142,8 +142,8 @@ value accepted. So adding a setting is a field on the struct, an entry in the
 registry, and `bun run settings:gen`; forgetting either half fails a test.
 
 Each entry's `status` says where the key is changed: `live` (a Settings row),
-`elsewhere` (another part of the app), `file-only`, `internal` (Atlas's own
-bookkeeping), or `legacy` (read only by a migration; safe to delete).
+`elsewhere` (another part of the app), `file-only`, or `internal` (Atlas's own
+bookkeeping).
 
 ## Schema
 
@@ -201,15 +201,6 @@ bookkeeping), or `legacy` (read only by a migration; safe to delete).
 Any other key under `[settings]` is left on disk untouched and reported as an
 `unknownKeys` entry in `get_atlas_config_info` — never treated as an error,
 never deleted.
-
-### Theme migration
-
-`atlasTheme` and `codeEditorTheme` are legacy keys. The first schema-1 load
-replaces them with the single `theme` setting and deletes both old keys. When
-the old editor selection was not the matching editor half of the old interface
-theme, its `editor.*`, `syntax.*`, and `diff.*` values become `themeOverrides`
-so the user keeps that deliberate combination. There is no separate editor
-theme after this migration.
 
 ### Mirrored instructions (`instructionSync`)
 
@@ -304,8 +295,8 @@ watcher — validates the **complete candidate** before it replaces anything.
 A malformed or invalid file never partially applies and never gets
 auto-repaired, renamed, or overwritten by Atlas on its own:
 
-- **Cold start, file missing:** normal (pre-migration, or the user deleted
-  it on purpose) — served compiled defaults, `status: "ok"`.
+- **Cold start, file missing:** normal (first run, or the user deleted it on
+  purpose) — the documented defaults are written, `status: "ok"`.
 - **Cold start, file malformed:** served compiled defaults in memory,
   `status: "usingDefaults"` with the parse/validation error. The file itself
   is never touched.
@@ -330,14 +321,7 @@ defaults — including flipping `shareTelemetry` back on — without saying so.
 
 A file that exists but cannot be *read* at all (permissions, a transient I/O
 fault) is treated as `"usingDefaults"`, not as an absent file — as is a
-config directory that can't be resolved, and a migration write that fails.
-The distinction matters for migration: see below.
-
-"Defaults" there means *compiled* defaults only once migration has been
-recorded. Before that, a broken or unwritable `config.toml` falls back to the
-legacy `state.json` settings instead, so the user keeps their real
-preferences (their telemetry opt-out included) for the session rather than
-silently reverting while those preferences sit unused on disk.
+config directory that can't be resolved, and a first-run write that fails.
 
 The only path allowed to overwrite a malformed (or just unwanted) file is
 "Recreate defaults" (`reset_atlas_config`), which backs the previous content
@@ -383,47 +367,13 @@ store adopts the fresh generation and retries the same patch, up to three
 attempts in total, before surfacing an error; one retry wasn't enough to
 survive a burst of rapid changes (dragging the zoom slider, say).
 
-## Migration from `state.json`
+## First run
 
-Before issue #64, these settings lived in `state.json`'s `AppState.settings`
-(schema v3 and earlier). On first launch after upgrading:
-
-1. `state.json` is bumped to schema v4, which adds
-   `settingsConfigMigrated: bool`.
-2. If `config.toml` doesn't exist yet and the marker is `false`, the legacy
-   `settings` object is extracted field-by-field (a value that doesn't parse
-   is skipped, not fatal to the rest) and written as the new `config.toml`.
-3. The marker is then set `true` — this is what stops Atlas from
-   resurrecting stale `state.json` settings if the user later deletes
-   `config.toml` on purpose.
-
-The marker is set **only** once `config.toml` demonstrably holds the
-settings: it either loaded cleanly or was just created. If the file exists
-but is malformed or unreadable, migration is deliberately left unrecorded,
-because `state.json`'s `settings` object is still the only surviving copy of
-the user's preferences at that point.
-
-That copy is protected from the other end too. The typed `AppState` has no
-`settings` field any more, so serializing it over `state.json` wholesale
-would delete the legacy object — and `state.json` gets saved for reasons
-that have nothing to do with settings (a rotated telemetry id, a project
-change). `AppState::save` therefore merges over whatever the file already
-holds rather than replacing it, and drops the legacy `settings` key only
-once `settingsConfigMigrated` is `true`. It writes through a uniquely-named
-temp file, `fsync`ed before the rename, for the same reasons `config.toml`
-does.
-
-And the preserved copy is actually used: while the marker is `false` and
-`config.toml` is unreadable, unparseable, or couldn't be written, those
-legacy settings become the effective ones. "Recreate defaults" still writes
-compiled defaults — that is what the button says — so it discards them; the
-banner offers "Open config" first for exactly that reason.
-
-One extra field, `adaptiveSuggestions`, existed on the frontend but had no
-Rust-side counterpart before this migration; it's now part of the schema
-above, closing that drift. Legacy values `"parse"`/`"llm"` (from before it
-was a closed enum) normalize to `"agent"` during migration only — the live
-schema accepts only `"agent"` or `"off"`.
+When `config.toml` doesn't exist, Atlas writes the fully commented defaults
+(`config.default.toml`). There is no import from older storage: Atlas is in
+alpha and keeps no migration paths. A key an older build wrote and this one
+doesn't know shows up under unknown keys in Settings › Privacy › Settings
+file, and can be deleted.
 
 ## What's explicitly NOT in this file
 
@@ -466,12 +416,11 @@ schema accepts only `"agent"` or `"off"`.
 - Rust: `src-tauri/src/state/atlas_config.rs` (`#[cfg(test)] mod tests`) —
   defaults, missing-key fallback, comment/unknown-key preservation across a
   patch, invalid values, unsupported future schema, malformed cold-start and
-  hot-reload behavior, generation conflicts, reset/backup, and the legacy
-  migration extraction (including the `adaptiveSuggestions` normalization).
+  hot-reload behavior, generation conflicts, reset/backup, and first run.
   Also: the compare-and-swap that refuses a write on a stale base, temp-file
   cleanup, external-edit adoption (generation bump + dedup on re-read),
-  `ConfigStatus`'s wire shape, and that a malformed or unreadable
-  `config.toml` never reports migration as done.
-- Rust: `src-tauri/src/state/app_state.rs` — a legacy `settings` key in
-  `state.json` doesn't break parsing of the rest of the file, survives a save
-  made before migration is recorded, and is dropped once it is.
+  `ConfigStatus`'s wire shape, and that an unreadable `config.toml` is
+  flagged rather than treated as absent.
+- Rust: `src-tauri/src/state/app_state.rs` — a `settings` key an older build
+  left in `state.json` doesn't break parsing of the rest of the file, and the
+  next save drops it.

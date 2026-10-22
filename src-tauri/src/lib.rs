@@ -188,12 +188,8 @@ pub fn run() {
         .setup(|app| {
             // Pre-load the Rust-owned `AppState` (currentProject + recents)
             // before the webview starts loading — paid in parallel with the
-            // WebView framework init, ~1ms on warm cache. `legacy_settings_raw`
-            // is the old `settings` object exactly as it appeared in a
-            // pre-#64 `state.json`, if any — `AppState` no longer has that
-            // field, so it's carried separately for the one-time migration
-            // below rather than being silently dropped by serde.
-            let (mut loaded, legacy_settings_raw) = AppState::load(app.handle());
+            // WebView framework init, ~1ms on warm cache.
+            let mut loaded = AppState::load(app.handle());
             // Device-stable telemetry identity, owned by Rust in its own file.
             // It used to live in `state.json` as `telemetry_anon_id`, where every
             // settings save wiped it (the frontend payload omitted the field and
@@ -212,26 +208,14 @@ pub fn run() {
                 loaded.telemetry_anon_id = Some(device_id.clone());
             }
 
-            // `config.toml` (issue #64): user preferences move out of
-            // `state.json.settings` into their own validated, human-editable
-            // file. `bootstrap` imports the legacy settings exactly once,
-            // guarded by `settings_config_migrated` so a user who later
-            // deletes `config.toml` on purpose never gets it silently
-            // resurrected from stale `state.json` data.
-            let migration = state::atlas_config::bootstrap(
-                loaded.settings_config_migrated,
-                legacy_settings_raw,
-            );
-            let migration_marker_changed =
-                migration.mark_migrated && !loaded.settings_config_migrated;
-            if migration_marker_changed {
-                loaded.settings_config_migrated = true;
-            }
-            let telemetry_enabled = migration.manager.effective().share_telemetry;
+            // User preferences live in their own validated, human-editable
+            // `config.toml`; a first run writes the documented defaults.
+            let config = state::atlas_config::bootstrap();
+            let telemetry_enabled = config.effective().share_telemetry;
             // The engine reads this gate on its first connect, which happens
             // after setup — so it must be in the environment before then.
             commands::atlas_config::apply_curated_plugin_sync_gate(
-                migration.manager.effective().curated_plugin_sync,
+                config.effective().curated_plugin_sync,
             );
             // Opaque window background, in the theme the user actually chose.
             // Fills the brief gap between window-shown and first React paint
@@ -253,7 +237,7 @@ pub fn run() {
             // Atlas was the focused window. An opaque window can be snapshotted
             // as a flat texture, so the OS animation stays smooth.
             if let Some(window) = app.get_webview_window("main") {
-                let settings = migration.manager.effective();
+                let settings = config.effective();
                 let system_is_light = matches!(window.theme(), Ok(tauri::Theme::Light));
                 let color = window_background::window_background(
                     &settings.theme,
@@ -264,16 +248,14 @@ pub fn run() {
             }
             // The app icon, before the window shows. Later changes arrive
             // through `notify_settings_changed`.
-            app_icon::apply(app.handle(), &migration.manager.effective().app_icon);
+            app_icon::apply(app.handle(), &config.effective().app_icon);
             // Whether `instructionSync` is on as Atlas starts, so switching it
             // off before any project opens still takes the mirrored blocks out.
             app.state::<commands::instruction_sync::InstructionSyncState>()
-                .init(migration.manager.effective().instruction_sync);
+                .init(config.effective().instruction_sync);
             // Whether agents start with their own memory off (M4).
-            atlas_agent_servers::set_atlas_only_memory(
-                migration.manager.effective().atlas_only_memory,
-            );
-            let atlas_config: state::AtlasConfigHandle = Arc::new(Mutex::new(migration.manager));
+            atlas_agent_servers::set_atlas_only_memory(config.effective().atlas_only_memory);
+            let atlas_config: state::AtlasConfigHandle = Arc::new(Mutex::new(config));
             app.manage(atlas_config.clone());
             let keep_awake = Arc::new(keep_awake::KeepAwakeManager::new(
                 atlas_config.lock().effective().keep_awake_while_running,
@@ -283,10 +265,10 @@ pub fn run() {
             commands::themes::start_watcher(app.handle());
             commands::git_autofetch::start(app.handle());
 
-            // Mirror the (possibly updated) telemetry id + migration marker
-            // back into `state.json` so both agree and a downgrade still
-            // finds them. `AppStatePatch` stops the frontend wiping either.
-            if telemetry_id_changed || migration_marker_changed {
+            // Mirror the (possibly updated) telemetry id back into
+            // `state.json` so both agree. `AppStatePatch` stops the frontend
+            // wiping it.
+            if telemetry_id_changed {
                 let _ = AppState::save(app.handle(), &loaded);
             }
             let app_state: AppStateHandle = Arc::new(Mutex::new(loaded));

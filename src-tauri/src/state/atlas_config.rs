@@ -71,30 +71,23 @@ pub const MAX_UI_SCALE: f32 = 2.0;
 // AppSettings
 // ---------------------------------------------------------------------------
 
-/// Adaptive next-step suggestion chips in the agent chat's per-turn card.
-/// Strict on the live config file (`agent` | `off` only) — the legacy
-/// `"parse"`/`"llm"` values only ever existed in old `state.json` payloads
-/// and are normalized to `Agent` once, during migration
-/// (see [`adaptive_suggestions_from_legacy`]), not accepted ongoing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// Adaptive next-step suggestion chips in the agent chat's per-turn card:
+/// exactly `agent` or `off`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AdaptiveSuggestions {
+    #[default]
     Agent,
     Off,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ThemeMode {
+    #[default]
     System,
     Dark,
     Light,
-}
-
-impl Default for ThemeMode {
-    fn default() -> Self {
-        Self::System
-    }
 }
 
 /// Deserialized by hand (below), not derived: `config.toml` is a file people
@@ -222,17 +215,11 @@ fn flatten_override_keys(
     }
 }
 
-impl Default for AdaptiveSuggestions {
-    fn default() -> Self {
-        Self::Agent
-    }
-}
-
 /// What picking another agent does to a chat that already has a conversation.
 /// A session is paired to one agent, so every option starts a new session; they
 /// differ in what happens to the one on screen. An empty chat always just
 /// switches in place, and a running one always gets a new tab.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AgentSwitchBehavior {
     /// Keep the conversation and open the new agent in a new tab.
@@ -242,13 +229,8 @@ pub enum AgentSwitchBehavior {
     Handoff,
     /// Switch in the same tab and start over; the conversation stays in history.
     /// The default, and how switching always worked before this setting existed.
+    #[default]
     Reset,
-}
-
-impl Default for AgentSwitchBehavior {
-    fn default() -> Self {
-        Self::Reset
-    }
 }
 
 /// User-facing toggles surfaced in Settings → General. Moved out of
@@ -322,11 +304,6 @@ pub struct AppSettings {
     /// platforms. See `crate::app_icon`.
     #[serde(default = "default_app_icon")]
     pub app_icon: String,
-    /// Pre-theme-core config fields. Read once, never serialized again.
-    #[serde(default, rename = "codeEditorTheme", skip_serializing)]
-    legacy_code_editor_theme: Option<String>,
-    #[serde(default, rename = "atlasTheme", skip_serializing)]
-    legacy_atlas_theme: Option<String>,
     /// "agent" (default) asks the coding agent to end each reply with a hidden
     /// `<next_steps>` block; "off" disables it.
     #[serde(default)]
@@ -498,8 +475,6 @@ impl Default for AppSettings {
             theme_overrides: ThemeOverride::default(),
             icon_theme: default_icon_theme(),
             app_icon: default_app_icon(),
-            legacy_code_editor_theme: None,
-            legacy_atlas_theme: None,
             adaptive_suggestions: AdaptiveSuggestions::default(),
             agent_switch_behavior: AgentSwitchBehavior::default(),
             remember_before_switch: false,
@@ -1173,146 +1148,8 @@ impl SettingsPatch {
 }
 
 // ---------------------------------------------------------------------------
-// Legacy migration (state.json.settings -> config.toml, one time)
+// Theme fallback
 // ---------------------------------------------------------------------------
-
-/// Legacy `state.json` carried `adaptiveSuggestions` values from before it was
-/// a closed enum (`"parse"`, `"llm"`) — both meant "on" under the old
-/// free-form implementation. Anything except an exact `"off"` normalizes to
-/// `Agent`, matching that prior behavior; a missing/absent value also
-/// defaults to `Agent`, same as [`AppSettings::default`].
-fn adaptive_suggestions_from_legacy(raw: Option<&serde_json::Value>) -> AdaptiveSuggestions {
-    match raw.and_then(|v| v.as_str()) {
-        Some("off") => AdaptiveSuggestions::Off,
-        _ => AdaptiveSuggestions::Agent,
-    }
-}
-
-/// Extract an `AppSettings` from the raw JSON `settings` object of a legacy
-/// `state.json` (i.e. `AppState.settings` before it was removed). Field-by-
-/// field with a default fallback, deliberately not a single
-/// `serde_json::from_value::<AppSettings>` — that would hard-fail the whole
-/// struct the moment it hit the old free-form `adaptiveSuggestions` string,
-/// discarding every other perfectly-good legacy value along with it.
-pub fn settings_from_legacy_json(raw: Option<&serde_json::Value>) -> AppSettings {
-    let mut settings = AppSettings::default();
-    let Some(raw) = raw else {
-        return settings;
-    };
-
-    macro_rules! take_bool {
-        ($field:ident, $key:literal) => {
-            if let Some(v) = raw.get($key).and_then(serde_json::Value::as_bool) {
-                settings.$field = v;
-            }
-        };
-    }
-    take_bool!(auto_add_atlas_gitignore, "autoAddAtlasGitignore");
-    take_bool!(enable_atlas_logs, "enableAtlasLogs");
-    take_bool!(show_hidden_files, "showHiddenFiles");
-    take_bool!(share_telemetry, "shareTelemetry");
-    take_bool!(link_telemetry_to_account, "linkTelemetryToAccount");
-    take_bool!(git_blame_inline, "gitBlameInline");
-    take_bool!(git_auto_fetch, "gitAutoFetch");
-    take_bool!(keep_awake_while_running, "keepAwakeWhileRunning");
-    take_bool!(auto_update, "autoUpdate");
-    take_bool!(curated_plugin_sync, "curatedPluginSync");
-    take_bool!(enter_to_send, "enterToSend");
-    take_bool!(agent_ui_navigation, "agentUiNavigation");
-    take_bool!(agent_org_access, "agentOrgAccess");
-
-    if let Some(v) = raw.get("uiScale").and_then(serde_json::Value::as_f64) {
-        let v = v as f32;
-        if v.is_finite() && (MIN_UI_SCALE..=MAX_UI_SCALE).contains(&v) {
-            settings.ui_scale = v;
-        }
-    }
-    if let Some(v) = raw
-        .get("embeddingModelId")
-        .and_then(serde_json::Value::as_str)
-    {
-        if !v.trim().is_empty() {
-            settings.embedding_model_id = v.to_string();
-        }
-    }
-    let old_editor = raw
-        .get("codeEditorTheme")
-        .and_then(serde_json::Value::as_str);
-    let old_atlas = raw.get("atlasTheme").and_then(serde_json::Value::as_str);
-    let (theme, theme_overrides) = migrate_legacy_theme(old_atlas, old_editor);
-    settings.theme = theme;
-    settings.theme_overrides = theme_overrides;
-    if let Some(v) = raw
-        .get("updaterIgnoredVersion")
-        .and_then(serde_json::Value::as_str)
-    {
-        settings.updater_ignored_version = Some(v.to_string());
-    }
-    settings.adaptive_suggestions =
-        adaptive_suggestions_from_legacy(raw.get("adaptiveSuggestions"));
-
-    settings
-}
-
-/// What the OLD editor-theme picker wrote when nobody had touched it.
-///
-/// `default_code_editor_theme()` returned `"atlas"` unconditionally — the same
-/// answer for every chrome theme — and it was serialized into every fresh
-/// `config.toml`. So the value sitting on disk says nothing about what its
-/// owner chose, and reading it as a deliberate choice forced Atlas's
-/// black/white/yellow `editor.*` / `syntax.*` / `diff.*` keys into the
-/// `themeOverrides` of every chyral / mirage / rosé-pine / phosphor user who
-/// had simply never opened the editor picker. One theme means one theme
-/// (decision 7): an untouched editor picker migrates to nothing.
-const LEGACY_EDITOR_DEFAULT: &str = "atlas";
-
-/// Fold the two old pickers (`atlasTheme` + `codeEditorTheme`) into one theme
-/// id plus, where the user really did diverge, a `themeOverrides` block.
-fn migrate_legacy_theme(
-    old_atlas: Option<&str>,
-    old_editor: Option<&str>,
-) -> (String, ThemeOverride) {
-    let mapped_theme = match old_atlas.map(str::trim).filter(|id| !id.is_empty()) {
-        Some("atlas-black") | None => default_theme(),
-        Some(id) => id.to_string(),
-    };
-    // Not checked against the catalog: a lookup that fails (a transient read
-    // error, a theme this build does not ship) is not a reason to write a
-    // different theme into the file. `fallback_unknown_theme` covers the
-    // in-memory side.
-    let theme = mapped_theme;
-    // Overrides are written only for an editor theme that was GENUINELY
-    // CHOSEN and that DIFFERS from the theme the chrome picker migrated to:
-    // absent, blank, the picker's untouched default, or simply the same theme
-    // under both pickers all mean "nothing to preserve".
-    let Some(editor_id) = old_editor
-        .map(str::trim)
-        .filter(|id| !id.is_empty() && *id != LEGACY_EDITOR_DEFAULT && *id != theme.as_str())
-    else {
-        return (theme, ThemeOverride::default());
-    };
-    let Ok(editor_theme) = atlas_theme::get_theme(editor_id) else {
-        tracing::warn!(target: "atlas::themes", theme = %editor_id, "unknown legacy editor theme; syntax override was not migrated");
-        return (theme, ThemeOverride::default());
-    };
-    let Some(variant) = editor_theme.dark.or(editor_theme.light) else {
-        return (theme, ThemeOverride::default());
-    };
-    let keys = variant
-        .keys
-        .into_iter()
-        .filter(|(key, _)| {
-            key.starts_with("editor.") || key.starts_with("syntax.") || key.starts_with("diff.")
-        })
-        .collect();
-    (
-        theme,
-        ThemeOverride {
-            keys,
-            ..ThemeOverride::default()
-        },
-    )
-}
 
 /// Serve the default theme for this session when `settings.theme` does not
 /// resolve — **in memory only**.
@@ -1327,48 +1164,6 @@ fn fallback_unknown_theme(settings: &mut AppSettings) {
         tracing::warn!(target: "atlas::themes", theme = %settings.theme, "theme in config.toml does not resolve ({error}); using atlas for this session");
         settings.theme = default_theme();
     }
-}
-
-/// Fold the legacy `atlasTheme` / `codeEditorTheme` keys into `theme` and
-/// `themeOverrides`, returning whether `document` changed. That migration is
-/// the only thing this writes; an unresolvable `theme` is handled in memory.
-fn migrate_theme_fields(document: &mut toml_edit::DocumentMut, settings: &mut AppSettings) -> bool {
-    let old_atlas = settings.legacy_atlas_theme.take();
-    let old_editor = settings.legacy_code_editor_theme.take();
-    let migrating = old_atlas.is_some() || old_editor.is_some();
-    if !migrating {
-        fallback_unknown_theme(settings);
-        return false;
-    }
-    let (theme, theme_overrides) =
-        migrate_legacy_theme(old_atlas.as_deref(), old_editor.as_deref());
-    settings.theme = theme;
-    settings.theme_overrides = theme_overrides;
-    if document
-        .get("settings")
-        .and_then(toml_edit::Item::as_table)
-        .is_none()
-    {
-        document["settings"] = toml_edit::Item::Table(toml_edit::Table::new());
-    }
-    let table = document["settings"]
-        .as_table_mut()
-        .expect("settings table was ensured");
-    table.remove("atlasTheme");
-    table.remove("codeEditorTheme");
-    table["theme"] = toml_edit::value(settings.theme.as_str());
-    table["themeMode"] = toml_edit::value(match settings.theme_mode {
-        ThemeMode::System => "system",
-        ThemeMode::Dark => "dark",
-        ThemeMode::Light => "light",
-    });
-    if settings.theme_overrides.is_empty() {
-        table.remove("themeOverrides");
-    } else {
-        table["themeOverrides"] = theme_override_item(&settings.theme_overrides);
-    }
-    fallback_unknown_theme(settings);
-    true
 }
 
 fn theme_override_item(theme_override: &ThemeOverride) -> toml_edit::Item {
@@ -1510,7 +1305,7 @@ impl ConfigManager {
     }
 
     fn from_raw(path: PathBuf, raw: &str) -> Result<Self, ConfigError> {
-        let mut document: toml_edit::DocumentMut = raw
+        let document: toml_edit::DocumentMut = raw
             .parse()
             .map_err(|e: toml_edit::TomlError| ConfigError::Parse(e.to_string()))?;
         let text = document.to_string();
@@ -1519,15 +1314,14 @@ impl ConfigManager {
         if file.schema_version > CONFIG_SCHEMA_VERSION {
             return Err(ConfigError::UnsupportedVersion(file.schema_version));
         }
-        migrate_theme_fields(&mut document, &mut file.settings);
+        fallback_unknown_theme(&mut file.settings);
         validate(&file.settings).map_err(ConfigError::Invalid)?;
         let unknown_keys = unknown_keys_in(&document);
-        let migrated_raw = document.to_string();
         Ok(Self {
             path,
             document,
             effective: file.settings,
-            last_raw: migrated_raw,
+            last_raw: text,
             generation: 0,
             status: ConfigStatus::Ok,
             unknown_keys,
@@ -1551,14 +1345,7 @@ impl ConfigManager {
     fn load_at(path: PathBuf) -> Self {
         match fs::read_to_string(&path) {
             Ok(raw) => match Self::from_raw(path.clone(), &raw) {
-                Ok(manager) => {
-                    if manager.last_raw != raw {
-                        if let Err(error) = write_atomic(&path, &manager.last_raw) {
-                            tracing::warn!(target: "atlas::config", "failed to persist theme settings migration: {error}");
-                        }
-                    }
-                    manager
-                }
+                Ok(manager) => manager,
                 Err(e) => {
                     tracing::warn!(
                         target: "atlas::config",
@@ -1572,17 +1359,14 @@ impl ConfigManager {
                 }
             },
             // File genuinely absent — the normal pre-first-write state, not
-            // an error. `bootstrap` below is what decides whether that's
-            // "needs migration" or "already migrated, stay on defaults".
+            // an error. `bootstrap` below writes the documented defaults.
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Self::in_memory_defaults(path),
             // Anything else (permissions, a transient I/O fault, a directory
             // where the file should be) is a *failure to read*, not an
             // absence. Serving defaults is still right at runtime — boot must
-            // never block on this — but the status MUST say so, because
-            // `bootstrap_at` keys the "the legacy state.json settings are
-            // now redundant" decision off it. Reporting `Ok` here is what let
-            // an unreadable config silently retire the user's only surviving
-            // copy of their preferences.
+            // never block on this — but the status MUST say so, or the
+            // Settings banner shows a healthy file while every preference
+            // reads back as a default.
             Err(e) => {
                 tracing::warn!(
                     target: "atlas::config",
@@ -1770,8 +1554,8 @@ impl ConfigManager {
         })
     }
 
-    /// Write a specific `AppSettings` as a brand-new file (migration's entry
-    /// point — there is no existing document to preserve yet).
+    /// Write a specific `AppSettings` as a brand-new file (first run — there
+    /// is no existing document to preserve yet).
     fn create_fresh_with(path: PathBuf, mut settings: AppSettings) -> Result<Self, ConfigError> {
         let document = document_for(&settings);
         let text = document.to_string();
@@ -1790,7 +1574,7 @@ impl ConfigManager {
 }
 
 /// Atomic write: a unique temp file in the same directory (so distinct UI
-/// writes, migration, and any external tooling can never collide on one
+/// writes, a first-run create, and any external tooling can never collide on one
 /// fixed `.tmp` name), flushed then renamed over the target.
 fn write_atomic(path: &Path, contents: &str) -> std::io::Result<()> {
     use std::io::Write;
@@ -1927,30 +1711,8 @@ pub fn update(app: &AppHandle, patch: SettingsPatch) -> Result<ConfigSnapshot, C
     }
 }
 
-/// Startup orchestration: decide whether `config.toml` needs to be created
-/// from a legacy `state.json.settings`, and return the manager either way.
-///
-/// `marker_already_set` is `AppState`'s `settings_config_migrated` flag (v4).
-/// It exists because "does `config.toml` exist" is NOT the same question as
-/// "has migration already happened" — a user can delete `config.toml` on
-/// purpose after migrating, and this must never resurrect the old
-/// `state.json` settings when that happens. The marker is what tells those
-/// two cases apart.
-pub struct MigrationOutcome {
-    pub manager: ConfigManager,
-    /// Whether the caller should persist `settings_config_migrated = true`
-    /// into `state.json` (v4) after this call. `true` once `config.toml`
-    /// demonstrably holds the settings — it either loaded cleanly or was
-    /// just created. Deliberately `false` when the file exists but could not
-    /// be read or parsed: the legacy `state.json.settings` is still the only
-    /// copy in that case and must survive until a real config does.
-    pub mark_migrated: bool,
-}
-
-pub fn bootstrap(
-    marker_already_set: bool,
-    legacy_settings_raw: Option<serde_json::Value>,
-) -> MigrationOutcome {
+/// Startup: load `config.toml`, writing the documented defaults on first run.
+pub fn bootstrap() -> ConfigManager {
     let Some(path) = ConfigManager::config_path() else {
         // No resolvable config dir at all (no $HOME / no %APPDATA%). Defaults
         // keep the app usable, but this is a failure and must reach the
@@ -1959,83 +1721,27 @@ pub fn bootstrap(
         manager.status = ConfigStatus::UsingDefaults {
             error: "could not resolve the Atlas config directory".to_string(),
         };
-        return MigrationOutcome {
-            manager,
-            mark_migrated: false,
-        };
+        return manager;
     };
-    bootstrap_at(path, marker_already_set, legacy_settings_raw)
+    bootstrap_at(path)
 }
 
-/// The actual migration decision, split out from `bootstrap` so it's
-/// testable against a real temp-dir path rather than whatever
-/// `config_root()` resolves to on the machine running the tests.
-fn bootstrap_at(
-    path: PathBuf,
-    marker_already_set: bool,
-    legacy_settings_raw: Option<serde_json::Value>,
-) -> MigrationOutcome {
+/// The path half of [`bootstrap`], testable against a temp dir.
+fn bootstrap_at(path: PathBuf) -> ConfigManager {
     if path.exists() {
-        // Config already exists — never merge stale `state.json` settings
-        // into it, whether this is the first time we've seen it (a v3->v4
-        // upgrade that lands after a user hand-authored config.toml, or a
-        // manual restore) or the Nth.
-        let mut manager = ConfigManager::load_at(path);
-        // ...but only report migration as done if that file could actually be
-        // READ. While it is malformed or unreadable, `state.json.settings` is
-        // still the only surviving copy of the user's preferences; setting
-        // the marker here would let `AppState::save` drop it (the typed
-        // `AppState` has no `settings` field any more), turning a recoverable
-        // bad file into permanent data loss.
-        let mark_migrated = matches!(manager.status(), ConfigStatus::Ok);
-        if !mark_migrated && !marker_already_set {
-            // The file is present but unusable, so migration never ran and
-            // `state.json.settings` is still the user's real configuration.
-            // Serve THAT rather than compiled defaults: keeping the legacy
-            // copy alive (see `AppState::save`) is only half the guarantee —
-            // the other half is honouring it while the file is broken, or the
-            // user still spends the whole session on defaults with, say,
-            // telemetry back on. The broken file itself is left untouched.
-            manager.effective = settings_from_legacy_json(legacy_settings_raw.as_ref());
-            manager.document = document_for(&manager.effective);
-            fallback_unknown_theme(&mut manager.effective);
-        }
-        return MigrationOutcome {
-            manager,
-            mark_migrated,
-        };
+        return ConfigManager::load_at(path);
     }
-
-    // No file yet. Import from legacy state exactly once, ever.
-    let settings = if marker_already_set {
-        AppSettings::default()
-    } else {
-        settings_from_legacy_json(legacy_settings_raw.as_ref())
-    };
-
-    match ConfigManager::create_fresh_with(path.clone(), settings.clone()) {
-        Ok(manager) => MigrationOutcome {
-            manager,
-            mark_migrated: true,
-        },
+    match ConfigManager::create_fresh_with(path.clone(), AppSettings::default()) {
+        Ok(manager) => manager,
         Err(e) => {
-            tracing::warn!(target: "atlas::config", "failed to write migrated config.toml: {e}");
-            // The file was never created, so `load_at` will take its
-            // "genuinely absent" branch and report `Ok` — which would hide a
-            // real failure behind a healthy status and drop the legacy
-            // settings we just computed. Serve those settings in memory and
-            // flag the write failure instead.
+            tracing::warn!(target: "atlas::config", "failed to write a fresh config.toml: {e}");
+            // `load_at` would take its "genuinely absent" branch and report
+            // `Ok`, hiding a real failure behind a healthy status.
             let mut manager = ConfigManager::load_at(path);
-            manager.effective = settings;
-            manager.document = document_for(&manager.effective);
-            fallback_unknown_theme(&mut manager.effective);
             manager.status = ConfigStatus::UsingDefaults {
                 error: format!("could not write config.toml: {e}"),
             };
-            MigrationOutcome {
-                manager,
-                mark_migrated: false,
-            }
+            manager
         }
     }
 }
@@ -2337,7 +2043,7 @@ someFutureKey = \"left alone\"
         fs::write(&path, raw).unwrap();
         let mut mgr = ConfigManager::from_raw(path, raw).unwrap();
         let gen_before = mgr.generation();
-        assert_eq!(mgr.reload_from_disk().unwrap(), false);
+        assert!(!mgr.reload_from_disk().unwrap());
         assert_eq!(mgr.generation(), gen_before);
     }
 
@@ -2366,155 +2072,19 @@ someFutureKey = \"left alone\"
     }
 
     #[test]
-    fn legacy_migration_extracts_known_fields() {
-        let legacy = serde_json::json!({
-            "enterToSend": false,
-            "atlasTheme": "rose-pine",
-            "uiScale": 1.5,
-        });
-        let settings = settings_from_legacy_json(Some(&legacy));
-        assert!(!settings.enter_to_send);
-        assert_eq!(settings.theme, "rose-pine");
-        assert_eq!(settings.ui_scale, 1.5);
-        // Untouched fields keep their compiled defaults.
-        assert!(settings.auto_update);
-    }
-
-    #[test]
-    fn config_theme_migration_merges_the_two_legacy_pickers_once() {
-        let (_dir, path) = tmp_config_path();
-        let raw = "schemaVersion = 1\n\n[settings]\natlasTheme = \"one-dark\"\ncodeEditorTheme = \"dracula\"\n";
-        let manager = ConfigManager::from_raw(path, raw).expect("legacy theme settings parse");
-
-        assert_eq!(manager.effective().theme, "one-dark");
-        assert!(manager
-            .effective()
-            .theme_overrides
-            .keys
-            .contains_key("syntax.keyword"));
-        assert!(!manager.last_raw.contains("atlasTheme"));
-        assert!(!manager.last_raw.contains("codeEditorTheme"));
-        assert!(manager.last_raw.contains("themeOverrides"));
-    }
-
-    /// The six themes the OLD `atlasTheme` picker could hold, and the schema-1
-    /// theme each one migrates to. `atlas-black` is the only rename.
-    const LEGACY_CHROME_THEMES: [(&str, &str); 6] = [
-        ("atlas-black", "atlas"),
-        ("chyral", "chyral"),
-        ("mirage", "mirage"),
-        ("rose-pine", "rose-pine"),
-        ("one-dark", "one-dark"),
-        ("phosphor", "phosphor"),
-    ];
-
-    /// The regression this guards: `default_code_editor_theme()` returned
-    /// `"atlas"` for everyone, so `codeEditorTheme = "atlas"` is what an
-    /// UNTOUCHED editor picker left on disk — for all six chrome themes, not
-    /// just the two that happened to share a name with an editor theme.
-    /// Reading it as "deliberately diverging" pinned Atlas's black/white/yellow
-    /// editor colours onto chyral, mirage, rosé-pine and phosphor users who had
-    /// never opened that picker.
-    #[test]
-    fn untouched_legacy_editor_picker_migrates_to_no_overrides() {
-        for (old_chrome, expected) in LEGACY_CHROME_THEMES {
-            for old_editor in [None, Some(""), Some("  "), Some(LEGACY_EDITOR_DEFAULT)] {
-                let (theme, overrides) = migrate_legacy_theme(Some(old_chrome), old_editor);
-                assert_eq!(theme, expected, "chrome {old_chrome}");
-                assert!(
-                    overrides.is_empty(),
-                    "chrome {old_chrome} with editor {old_editor:?} must not diverge, got {overrides:?}"
-                );
-            }
-        }
-    }
-
-    /// The other half of the same rule: an editor theme that really was picked,
-    /// and really is a different theme, still carries its colours over.
-    #[test]
-    fn chosen_legacy_editor_theme_migrates_its_syntax_keys() {
-        for (old_chrome, expected) in LEGACY_CHROME_THEMES {
-            let (theme, overrides) = migrate_legacy_theme(Some(old_chrome), Some("dracula"));
-            assert_eq!(theme, expected, "chrome {old_chrome}");
-            assert!(
-                overrides.keys.contains_key("syntax.keyword"),
-                "chrome {old_chrome} lost its chosen editor theme"
-            );
-            assert!(overrides.base.is_empty() && overrides.palette.is_empty());
-            assert!(
-                overrides.keys.keys().all(|key| key.starts_with("editor.")
-                    || key.starts_with("syntax.")
-                    || key.starts_with("diff.")),
-                "only editor-facing keys migrate: {:?}",
-                overrides.keys.keys().collect::<Vec<_>>()
-            );
-        }
-    }
-
-    /// Both pickers naming the same theme is not a divergence either.
-    #[test]
-    fn legacy_editor_theme_equal_to_the_chrome_theme_writes_no_overrides() {
-        for id in ["one-dark", "phosphor", "rose-pine"] {
-            let (theme, overrides) = migrate_legacy_theme(Some(id), Some(id));
-            assert_eq!(theme, id);
-            assert!(
-                overrides.is_empty(),
-                "{id} diverged from itself: {overrides:?}"
-            );
-        }
-    }
-
-    /// End to end through `config.toml`: the untouched default leaves no
-    /// `themeOverrides` table behind at all.
-    #[test]
-    fn config_theme_migration_writes_no_overrides_for_the_untouched_editor_default() {
-        let (_dir, path) = tmp_config_path();
-        let raw =
-            "schemaVersion = 1\n\n[settings]\natlasTheme = \"chyral\"\ncodeEditorTheme = \"atlas\"\n";
-        let manager = ConfigManager::from_raw(path, raw).expect("legacy theme settings parse");
-
-        assert_eq!(manager.effective().theme, "chyral");
-        assert!(manager.effective().theme_overrides.is_empty());
-        assert!(!manager.last_raw.contains("themeOverrides"));
-        assert!(!manager.last_raw.contains("atlasTheme"));
-        assert!(!manager.last_raw.contains("codeEditorTheme"));
-    }
-
-    #[test]
     fn unknown_config_theme_falls_back_in_memory_and_is_never_rewritten() {
         let (_dir, path) = tmp_config_path();
         let raw = "schemaVersion = 1\n\n[settings]\ntheme = \"from-a-newer-atlas\"\n";
         let manager = ConfigManager::from_raw(path.clone(), raw).expect("unknown id falls back");
 
         assert_eq!(manager.effective().theme, default_theme());
-        assert_eq!(manager.last_raw, raw, "a failed lookup is not a migration");
+        assert_eq!(manager.last_raw, raw, "a failed lookup rewrites nothing");
 
-        // And through the cold-start path, which is the one that writes.
+        // And through the cold-start path.
         fs::write(&path, raw).unwrap();
         let manager = ConfigManager::load_at(path.clone());
         assert_eq!(manager.effective().theme, default_theme());
         assert_eq!(fs::read_to_string(&path).unwrap(), raw);
-    }
-
-    /// The legacy keys still migrate — and the theme they name is written as
-    /// named, even when this build cannot resolve it.
-    #[test]
-    fn legacy_theme_keys_migrate_without_rewriting_an_unresolvable_theme() {
-        let (_dir, path) = tmp_config_path();
-        let raw = "schemaVersion = 1\n\n[settings]\natlasTheme = \"not-shipped-here\"\n";
-        let manager = ConfigManager::from_raw(path, raw).expect("legacy settings parse");
-
-        assert_eq!(
-            manager.effective().theme,
-            default_theme(),
-            "served in memory"
-        );
-        assert!(
-            manager.last_raw.contains("theme = \"not-shipped-here\""),
-            "{}",
-            manager.last_raw
-        );
-        assert!(!manager.last_raw.contains("atlasTheme"));
     }
 
     /// `write_into` is hand-written per field, and a field it forgets is saved
@@ -2654,110 +2224,41 @@ red = "#ee0000"
         );
     }
 
+    // ── bootstrap_at (first run) ──────────────────────────
+
     #[test]
-    fn legacy_migration_normalizes_parse_and_llm_to_agent() {
-        for legacy_value in ["parse", "llm", "agent", "anything-else"] {
-            let legacy = serde_json::json!({ "adaptiveSuggestions": legacy_value });
-            let settings = settings_from_legacy_json(Some(&legacy));
-            assert_eq!(
-                settings.adaptive_suggestions,
-                AdaptiveSuggestions::Agent,
-                "value: {legacy_value}"
-            );
-        }
-        let legacy = serde_json::json!({ "adaptiveSuggestions": "off" });
+    fn bootstrap_writes_a_documented_file_on_first_run() {
+        let (_dir, path) = tmp_config_path();
+        let manager = bootstrap_at(path.clone());
+        assert_eq!(manager.status(), &ConfigStatus::Ok);
+        assert_eq!(manager.effective(), &AppSettings::default());
         assert_eq!(
-            settings_from_legacy_json(Some(&legacy)).adaptive_suggestions,
-            AdaptiveSuggestions::Off
+            fs::read_to_string(&path).unwrap(),
+            document_for(&AppSettings::default()).to_string()
         );
     }
 
     #[test]
-    fn legacy_migration_defaults_missing_adaptive_to_agent() {
-        let settings = settings_from_legacy_json(None);
-        assert_eq!(settings.adaptive_suggestions, AdaptiveSuggestions::Agent);
-    }
-
-    #[test]
-    fn legacy_migration_ignores_out_of_range_ui_scale() {
-        let legacy = serde_json::json!({ "uiScale": 99.0 });
-        let settings = settings_from_legacy_json(Some(&legacy));
-        assert_eq!(settings.ui_scale, default_ui_scale());
-    }
-
-    // ── bootstrap_at (migration orchestration) ──────────────────────────
-
-    #[test]
-    fn bootstrap_first_run_imports_legacy_settings_and_marks_migrated() {
-        let (_dir, path) = tmp_config_path();
-        let legacy = serde_json::json!({ "enterToSend": false, "atlasTheme": "rose-pine" });
-
-        let outcome = bootstrap_at(path.clone(), false, Some(legacy));
-
-        assert!(outcome.mark_migrated);
-        assert!(!outcome.manager.effective().enter_to_send);
-        assert_eq!(outcome.manager.effective().theme, "rose-pine");
-        assert!(
-            path.exists(),
-            "bootstrap must actually write config.toml on first run"
-        );
-    }
-
-    #[test]
-    fn bootstrap_never_reimports_after_marker_is_set() {
-        let (_dir, path) = tmp_config_path();
-        let legacy = serde_json::json!({ "enterToSend": false });
-
-        // marker_already_set = true: even though config.toml doesn't exist
-        // yet, this must NOT be treated as a first run — the user deleted
-        // their config on purpose after already migrating once.
-        let outcome = bootstrap_at(path, true, Some(legacy));
-
-        assert!(outcome.mark_migrated);
-        assert_eq!(outcome.manager.effective(), &AppSettings::default());
-    }
-
-    #[test]
-    fn bootstrap_leaves_an_existing_config_untouched_regardless_of_legacy_data() {
+    fn bootstrap_leaves_an_existing_config_untouched() {
         let (_dir, path) = tmp_config_path();
         let raw = "schemaVersion = 1\n\n[settings]\nenterToSend = false\n";
         fs::write(&path, raw).unwrap();
-        let legacy =
-            serde_json::json!({ "enterToSend": true, "atlasTheme": "should-never-appear" });
-
-        let outcome = bootstrap_at(path.clone(), false, Some(legacy));
-
-        assert!(outcome.mark_migrated);
-        // The existing file wins outright — legacy data is never merged in,
-        // not even for keys the existing file didn't set.
-        assert!(!outcome.manager.effective().enter_to_send);
-        assert_eq!(outcome.manager.effective().theme, default_theme());
-        assert_eq!(
-            fs::read_to_string(&path).unwrap(),
-            raw,
-            "must not rewrite an existing config.toml"
-        );
+        let manager = bootstrap_at(path.clone());
+        assert!(!manager.effective().enter_to_send);
+        assert_eq!(fs::read_to_string(&path).unwrap(), raw);
     }
 
+    /// A directory sitting where the file should be cannot be read; that is
+    /// flagged rather than reported as a healthy, absent file.
     #[test]
-    fn bootstrap_is_idempotent_across_repeated_calls() {
+    fn bootstrap_flags_an_unreadable_config() {
         let (_dir, path) = tmp_config_path();
-        let legacy = serde_json::json!({ "enterToSend": false });
-
-        let first = bootstrap_at(path.clone(), false, Some(legacy.clone()));
-        assert!(first.mark_migrated);
-        let after_first = fs::read_to_string(&path).unwrap();
-
-        // Simulates the caller persisting `mark_migrated` and the process
-        // restarting: same call, but now with the marker set.
-        let second = bootstrap_at(path.clone(), true, Some(legacy));
-        assert!(second.mark_migrated);
-        assert_eq!(
-            fs::read_to_string(&path).unwrap(),
-            after_first,
-            "a second bootstrap must not rewrite the file"
-        );
-        assert!(!second.manager.effective().enter_to_send);
+        fs::create_dir_all(&path).unwrap();
+        let manager = bootstrap_at(path);
+        assert!(matches!(
+            manager.status(),
+            ConfigStatus::UsingDefaults { .. }
+        ));
     }
 
     // ── Cross-artifact key coverage ──────────────────────────────────────
@@ -2822,115 +2323,6 @@ red = "#ee0000"
             .unwrap(),
             serde_json::json!({ "status": "usingLastKnownGood", "error": "boom" })
         );
-    }
-
-    /// A file that exists but cannot be PARSED must not be reported as a
-    /// completed migration: `state.json.settings` is still the only surviving
-    /// copy of the user's preferences at that point, and the marker is what
-    /// authorizes `AppState::save` to drop it.
-    #[test]
-    fn a_malformed_existing_config_does_not_report_migration_done() {
-        let (_dir, path) = tmp_config_path();
-        fs::write(&path, "this is not { valid toml").unwrap();
-        let legacy = serde_json::json!({ "enterToSend": false, "gitBlameInline": false });
-
-        let outcome = bootstrap_at(path, false, Some(legacy));
-
-        assert!(
-            !outcome.mark_migrated,
-            "a malformed config.toml must not retire the legacy settings"
-        );
-        assert!(matches!(
-            outcome.manager.status(),
-            ConfigStatus::UsingDefaults { .. }
-        ));
-        // Boot never blocks: something usable is always effective. Which
-        // settings those are is the subject of
-        // `a_broken_config_falls_back_to_the_legacy_settings_not_compiled_defaults`.
-        assert!(!outcome.manager.effective().enter_to_send);
-    }
-
-    /// The same guarantee for a file that cannot be READ at all (here: a
-    /// directory sitting where the config should be — deterministic on every
-    /// platform and every uid, unlike a chmod-based test). This is the case
-    /// `load_at` used to fold into "file absent" and report as healthy.
-    #[test]
-    fn an_unreadable_existing_config_does_not_report_migration_done() {
-        let (_dir, path) = tmp_config_path();
-        fs::create_dir_all(&path).unwrap();
-
-        let outcome = bootstrap_at(
-            path,
-            false,
-            Some(serde_json::json!({ "enterToSend": false })),
-        );
-
-        assert!(
-            !outcome.mark_migrated,
-            "an unreadable config.toml must not retire the legacy settings"
-        );
-        assert!(
-            matches!(outcome.manager.status(), ConfigStatus::UsingDefaults { .. }),
-            "an unreadable file must be flagged, not reported as Ok"
-        );
-    }
-
-    /// Preserving `state.json.settings` is only half the guarantee — while the
-    /// file is broken those settings must actually be in EFFECT, or the user
-    /// spends the session on compiled defaults (telemetry back on) with their
-    /// real preferences sitting unused on disk.
-    #[test]
-    fn a_broken_config_falls_back_to_the_legacy_settings_not_compiled_defaults() {
-        let (_dir, path) = tmp_config_path();
-        fs::write(&path, "this is not { valid toml").unwrap();
-        let legacy = serde_json::json!({ "shareTelemetry": false, "uiScale": 1.25 });
-
-        let outcome = bootstrap_at(path, false, Some(legacy));
-
-        assert!(!outcome.mark_migrated);
-        assert!(
-            !outcome.manager.effective().share_telemetry,
-            "the user's opt-out must survive"
-        );
-        assert_eq!(outcome.manager.effective().ui_scale, 1.25);
-        assert!(matches!(
-            outcome.manager.status(),
-            ConfigStatus::UsingDefaults { .. }
-        ));
-    }
-
-    /// ...but only before migration is recorded. Once the marker is set, the
-    /// legacy object is stale by definition and must not be resurrected.
-    #[test]
-    fn a_broken_config_after_migration_does_not_resurrect_legacy_settings() {
-        let (_dir, path) = tmp_config_path();
-        fs::write(&path, "this is not { valid toml").unwrap();
-        let legacy = serde_json::json!({ "shareTelemetry": false });
-
-        let outcome = bootstrap_at(path, true, Some(legacy));
-
-        assert!(
-            outcome.manager.effective().share_telemetry,
-            "a post-migration boot must not read state.json.settings again"
-        );
-    }
-
-    /// The healthy path still marks migration done, so the two tests above
-    /// can't be satisfied by simply never setting the marker.
-    #[test]
-    fn a_readable_existing_config_reports_migration_done() {
-        let (_dir, path) = tmp_config_path();
-        fs::write(
-            &path,
-            "schemaVersion = 1\n\n[settings]\nenterToSend = false\n",
-        )
-        .unwrap();
-
-        let outcome = bootstrap_at(path, false, None);
-
-        assert!(outcome.mark_migrated);
-        assert_eq!(outcome.manager.status(), &ConfigStatus::Ok);
-        assert!(!outcome.manager.effective().enter_to_send);
     }
 
     /// The external-edit half of the round trip: a valid edit made outside
