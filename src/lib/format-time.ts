@@ -22,10 +22,12 @@ export function timeFormat(): TimeFormat {
   return current;
 }
 
-/** `hour12` for the active format; nothing for "system", so the locale decides. */
-export function hourCycle(): { hour12?: boolean } {
-  if (current === "12h") return { hour12: true };
-  if (current === "24h") return { hour12: false };
+/** `hourCycle` for the active format; nothing for "system", so the locale
+ *  decides. Not `hour12: false`: some engines read that as the `h24` cycle for
+ *  a 12-hour locale and print midnight as "24:05". */
+export function hourCycle(): { hourCycle?: "h12" | "h23" } {
+  if (current === "12h") return { hourCycle: "h12" };
+  if (current === "24h") return { hourCycle: "h23" };
   return {};
 }
 

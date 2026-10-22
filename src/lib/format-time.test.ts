@@ -19,6 +19,11 @@ describe("format-time", () => {
     );
   });
 
+  it("writes midnight as 00, not 24, on a 24-hour clock in a 12-hour locale", () => {
+    setTimeFormat("24h");
+    expect(formatTime(new Date(2026, 0, 1, 0, 5), undefined, "en-US")).toBe("00:05");
+  });
+
   it("forces a 12-hour clock", () => {
     setTimeFormat("12h");
     expect(formatTime(AFTERNOON, undefined, "en-GB")).toMatch(/^3:07\s?pm$/i);
