@@ -655,7 +655,7 @@ fn unknown_keys_in(document: &toml_edit::DocumentMut) -> Vec<String> {
 }
 
 /// The keys under `[settings]` right now, to tell which a patch then adds.
-fn settings_keys_in(document: &toml_edit::DocumentMut) -> Vec<String> {
+pub(crate) fn settings_keys_in(document: &toml_edit::DocumentMut) -> Vec<String> {
     document
         .get("settings")
         .and_then(|i| i.as_table())
@@ -671,7 +671,7 @@ fn settings_keys_in(document: &toml_edit::DocumentMut) -> Vec<String> {
 /// with nothing explaining them — the file stopped documenting itself the
 /// first time a new setting was touched. Keys that were already present keep
 /// whatever decor they have: a user's own comment is never replaced.
-fn document_added_keys(document: &mut toml_edit::DocumentMut, present: &[String]) {
+pub(crate) fn document_added_keys(document: &mut toml_edit::DocumentMut, present: &[String]) {
     let Some(table) = document.get_mut("settings").and_then(|i| i.as_table_mut()) else {
         return;
     };
@@ -1576,7 +1576,7 @@ impl ConfigManager {
 /// Atomic write: a unique temp file in the same directory (so distinct UI
 /// writes, a first-run create, and any external tooling can never collide on one
 /// fixed `.tmp` name), flushed then renamed over the target.
-fn write_atomic(path: &Path, contents: &str) -> std::io::Result<()> {
+pub(crate) fn write_atomic(path: &Path, contents: &str) -> std::io::Result<()> {
     use std::io::Write;
 
     if let Some(dir) = path.parent() {

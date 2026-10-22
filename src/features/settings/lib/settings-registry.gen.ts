@@ -345,6 +345,8 @@ export interface SettingMeta {
   applies?: string;
   /** For `elsewhere`: where in the app it is changed. */
   setIn?: string;
+  /** A project's `.atlas/config.toml` can override it. */
+  project?: true;
 }
 
 export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
@@ -501,6 +503,7 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
     section: "Editor",
     title: "Inline Git blame",
     summary: "Show who last changed the current line, and when, at the end of the line.",
+    project: true,
   },
   {
     key: "gitAutoFetch",
@@ -511,6 +514,7 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
     title: "Auto-fetch from remote",
     summary:
       "Quietly fetch the open project so the Pull badge shows what the remote has. Never pulls.",
+    project: true,
   },
   {
     key: "keepAwakeWhileRunning",
@@ -578,6 +582,7 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
     title: "Let Atlas Agent navigate the app",
     summary:
       "Open files at a line, switch tabs and panels, and fill in a message or command for you.",
+    project: true,
   },
   {
     key: "agentOrgAccess",
@@ -587,6 +592,7 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
     section: "Atlas Agent permissions",
     title: "Let Atlas Agent act in your organization",
     summary: "Read your organization's sessions, comments and conversations, and act there as you.",
+    project: true,
   },
   {
     key: "agentCodeTools",
@@ -597,6 +603,7 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
     title: "Let agents search code with Atlas",
     summary:
       "Give agents Atlas's in-process grep and find-files, which respect .gitignore and skip secrets.",
+    project: true,
   },
   {
     key: "memoryDreams",
@@ -607,6 +614,7 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
     title: "Nightly memory review",
     summary:
       "Once a day, propose changes to shared memory for you to review. Nothing applies without you.",
+    project: true,
   },
   {
     key: "memoryRepoMirror",
@@ -616,6 +624,7 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
     section: "Shared memory",
     title: "Mirror memory as an Agent Memory Repo",
     summary: "Keep a read-only local git copy of each project's memory, outside the project.",
+    project: true,
   },
   {
     key: "atlasOnlyMemory",

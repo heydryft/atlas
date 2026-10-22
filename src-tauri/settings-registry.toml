@@ -38,6 +38,8 @@
 #               elsewhere set from somewhere else in the app (`set_in` says where)
 #               file-only no UI; edit config.toml by hand
 #               internal  Atlas's own bookkeeping; never edit
+#   project     true when a project's `.atlas/config.toml` may override it.
+#               Only for a live key whose every reader knows its project.
 #   page        Settings page id (a `[[page]]` id, also a Settings section):
 #               general, appearance, icons, chat, memory, notifications, source-control, privacy, updates
 #   section     heading inside that page.
@@ -346,6 +348,7 @@ key = "gitBlameInline"
 type = "boolean"
 default = true
 status = "live"
+project = true
 page = "source-control"
 section = "Editor"
 title = "Inline Git blame"
@@ -361,6 +364,7 @@ key = "gitAutoFetch"
 type = "boolean"
 default = true
 status = "live"
+project = true
 page = "source-control"
 section = "Repositories"
 title = "Auto-fetch from remote"
@@ -471,6 +475,7 @@ key = "agentUiNavigation"
 type = "boolean"
 default = true
 status = "live"
+project = true
 page = "chat"
 section = "Atlas Agent permissions"
 title = "Let Atlas Agent navigate the app"
@@ -488,6 +493,7 @@ key = "agentOrgAccess"
 type = "boolean"
 default = true
 status = "live"
+project = true
 page = "chat"
 section = "Atlas Agent permissions"
 title = "Let Atlas Agent act in your organization"
@@ -505,6 +511,7 @@ key = "agentCodeTools"
 type = "boolean"
 default = true
 status = "live"
+project = true
 page = "chat"
 section = "Atlas Agent permissions"
 title = "Let agents search code with Atlas"
@@ -522,6 +529,7 @@ key = "memoryDreams"
 type = "boolean"
 default = false
 status = "live"
+project = true
 page = "memory"
 section = "Shared memory"
 title = "Nightly memory review"
@@ -539,6 +547,7 @@ key = "memoryRepoMirror"
 type = "boolean"
 default = false
 status = "live"
+project = true
 page = "memory"
 section = "Shared memory"
 title = "Mirror memory as an Agent Memory Repo"

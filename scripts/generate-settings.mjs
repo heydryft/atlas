@@ -242,6 +242,10 @@ export function readSource(text = readFileSync(SOURCE, "utf8")) {
       problems.push(`${at}: \`ts_type\` and \`ts_import\` come together`);
     if (setting.type === "table" && setting.ts_type === undefined)
       problems.push(`${at}: a table needs a \`ts_type\``);
+    if (setting.project !== undefined && typeof setting.project !== "boolean")
+      problems.push(`${at}: \`project\` is true or false`);
+    if (setting.project && setting.status !== "live")
+      problems.push(`${at}: only a live setting can be set per project`);
   }
 
   if (problems.length > 0) {
@@ -316,6 +320,7 @@ export function configComment(setting) {
   if (ABSENT_BY_DEFAULT.has(setting.type)) text = `${setting.key}: ${text}`;
   const literal = tomlLiteral(setting);
   if (literal !== null) text = `${text} (default: ${literal})`;
+  if (setting.project) text = `${text} A project can override it in its own .atlas/config.toml.`;
   return wrap(text, COMMENT_WIDTH - 2)
     .map((line) => `# ${line}`)
     .join("\n");
@@ -334,6 +339,10 @@ function renderRust({ settings }) {
         `    (\n        "${setting.key}",\n        ${rustString(configComment(setting))},\n    ),`,
     )
     .join("\n");
+  const projectKeys = settings
+    .filter((setting) => setting.project)
+    .map((setting) => `    "${setting.key}",`)
+    .join("\n");
   return `// ${GENERATED_NOTE}
 //
 // camelCase key → the comment written directly above it in a generated
@@ -342,6 +351,12 @@ function renderRust({ settings }) {
 
 const SETTINGS_DOCS: &[(&str, &str)] = &[
 ${entries}
+];
+
+/// The keys a project's \`.atlas/config.toml\` may override (\`project = true\`
+/// in the registry). Any other key there is ignored and reported.
+pub const PROJECT_SETTING_KEYS: &[&str] = &[
+${projectKeys}
 ];
 `;
 }
@@ -398,6 +413,7 @@ function metaFor(setting) {
   if (setting.platforms) meta.platforms = setting.platforms;
   if (setting.applies) meta.applies = setting.applies;
   if (setting.set_in) meta.setIn = setting.set_in;
+  if (setting.project) meta.project = true;
   return meta;
 }
 
@@ -482,6 +498,8 @@ export interface SettingMeta {
   applies?: string;
   /** For \`elsewhere\`: where in the app it is changed. */
   setIn?: string;
+  /** A project's \`.atlas/config.toml\` can override it. */
+  project?: true;
 }
 
 export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
@@ -521,7 +539,7 @@ function docsWhere(setting, pages) {
   const page = pages.find((entry) => entry.id === setting.page);
   switch (setting.status) {
     case "live":
-      return `${page.title} › ${setting.section} › ${setting.title}`;
+      return `${page.title} › ${setting.section} › ${setting.title}${setting.project ? " (per project too)" : ""}`;
     case "elsewhere":
       return setting.set_in;
     case "file-only":

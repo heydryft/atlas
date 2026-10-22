@@ -36,6 +36,7 @@ export function ChatPage() {
 
   return (
     <SettingsPage
+      scopeable
       title="Chat"
       description="The composer, switching agents, and what Atlas Agent may do."
     >

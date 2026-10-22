@@ -21,7 +21,11 @@ import { ConfigFileSection } from "./config-file";
 
 export function SourceControlPage() {
   return (
-    <SettingsPage title="Source Control" description="Git in the editor and in the background.">
+    <SettingsPage
+      title="Source Control"
+      description="Git in the editor and in the background."
+      scopeable
+    >
       <SettingsSection title="Editor">
         <SettingsGroup>
           <SettingsRow

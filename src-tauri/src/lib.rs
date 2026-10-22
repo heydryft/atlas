@@ -257,6 +257,7 @@ pub fn run() {
             atlas_agent_servers::set_atlas_only_memory(config.effective().atlas_only_memory);
             let atlas_config: state::AtlasConfigHandle = Arc::new(Mutex::new(config));
             app.manage(atlas_config.clone());
+            app.manage(state::project_config::ProjectConfigs::default());
             let keep_awake = Arc::new(keep_awake::KeepAwakeManager::new(
                 atlas_config.lock().effective().keep_awake_while_running,
             ));
@@ -781,6 +782,8 @@ pub fn run() {
             commands::atlas_config::get_atlas_config_info,
             commands::atlas_config::update_atlas_settings,
             commands::atlas_config::reset_atlas_config,
+            commands::project_settings::get_project_settings,
+            commands::project_settings::update_project_settings,
             commands::atlas_config::open_atlas_config,
             commands::themes::list_themes,
             commands::themes::get_theme,

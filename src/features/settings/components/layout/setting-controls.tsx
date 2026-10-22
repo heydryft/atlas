@@ -6,9 +6,9 @@
 
 import { Switch } from "@/ui/switch";
 import { Select, type SelectOption } from "@/ui/select";
-import { useSettingsStore } from "../../stores/settings-store";
 import type { AppSettings, BooleanSettingKey } from "../../lib/app-settings";
 import { settingMeta } from "../../lib/settings-sections";
+import { useScopedSetting } from "../../lib/use-scoped-setting";
 
 /** "Needs you: System notification", not just "System notification": one page
  *  can hold several rows with the same title, one per section, and a screen
@@ -28,15 +28,14 @@ export function SettingSwitch({
   /** Runs after the value is saved — for a side effect the store can't own. */
   onChange?: (next: boolean) => void;
 }) {
-  const checked = useSettingsStore((s) => s.settings[setting]);
-  const { updateSettings } = useSettingsStore.use.actions();
+  const scoped = useScopedSetting(setting);
   return (
     <Switch
-      checked={checked}
-      disabled={disabled}
+      checked={scoped.value}
+      disabled={disabled || scoped.globalOnly}
       aria-label={accessibleName(setting)}
       onCheckedChange={(next) => {
-        void updateSettings({ [setting]: next } as Partial<AppSettings>);
+        scoped.set(next);
         onChange?.(next);
       }}
     />
@@ -61,15 +60,14 @@ export function SettingSelect<K extends EnumKey>({
   options: readonly SelectOption<AppSettings[K] & string>[];
   disabled?: boolean;
 }) {
-  const value = useSettingsStore((s) => s.settings[setting]) as AppSettings[K] & string;
-  const { updateSettings } = useSettingsStore.use.actions();
+  const scoped = useScopedSetting(setting);
   return (
     <Select
-      value={value}
+      value={scoped.value as AppSettings[K] & string}
       options={options}
-      disabled={disabled}
+      disabled={disabled || scoped.globalOnly}
       aria-label={accessibleName(setting)}
-      onValueChange={(next) => void updateSettings({ [setting]: next } as Partial<AppSettings>)}
+      onValueChange={(next) => scoped.set(next as AppSettings[K])}
     />
   );
 }
