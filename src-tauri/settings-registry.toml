@@ -38,7 +38,6 @@
 #               elsewhere set from somewhere else in the app (`set_in` says where)
 #               file-only no UI; edit config.toml by hand
 #               internal  Atlas's own bookkeeping; never edit
-#               legacy    no longer read except by a migration; safe to delete
 #   page        Settings page id (a `[[page]]` id, also a Settings section):
 #               general, appearance, icons, chat, memory, notifications, source-control, privacy, updates
 #   section     heading inside that page.
@@ -567,21 +566,6 @@ Off: each agent also keeps its own memory files.
 validation = "—"
 
 [[setting]]
-key = "terminalNotifications"
-type = "boolean"
-default = true
-status = "legacy"
-page = "notifications"
-section = "Legacy"
-title = "Terminal notifications (legacy)"
-summary = "Superseded by the per-kind switches in Notifications."
-doc = """
-Legacy: superseded by notifyDisabledKinds. Read once by the notification
-migration and ignored after; safe to delete once notificationsMigrated is true.
-"""
-validation = "—"
-
-[[setting]]
 key = "terminalNotifyMinDurationMs"
 type = "integer"
 min = 0
@@ -597,66 +581,6 @@ A successful command shorter than this many milliseconds never notifies. Must
 be between 0 and 3600000.
 """
 validation = "0 ≤ n ≤ 3600000"
-
-[[setting]]
-key = "terminalNotifyOnFailure"
-type = "boolean"
-default = true
-status = "legacy"
-page = "notifications"
-section = "Legacy"
-title = "Notify on command failure (legacy)"
-summary = "Superseded by the per-kind switches in Notifications."
-doc = """
-Legacy: superseded by notifyDisabledKinds. Read once by the notification
-migration and ignored after; safe to delete once notificationsMigrated is true.
-"""
-validation = "—"
-
-[[setting]]
-key = "terminalNotifyOnAttention"
-type = "boolean"
-default = true
-status = "legacy"
-page = "notifications"
-section = "Legacy"
-title = "Notify when a command wants input (legacy)"
-summary = "Superseded by the per-kind switches in Notifications."
-doc = """
-Legacy: superseded by notifyDisabledKinds. Read once by the notification
-migration and ignored after; safe to delete once notificationsMigrated is true.
-"""
-validation = "—"
-
-[[setting]]
-key = "terminalNotifyNative"
-type = "boolean"
-default = true
-status = "legacy"
-page = "notifications"
-section = "Legacy"
-title = "Terminal system notifications (legacy)"
-summary = "Superseded by the per-tier System notification switches."
-doc = """
-Legacy: superseded by the notify*Native keys. Read once by the notification
-migration and ignored after; safe to delete once notificationsMigrated is true.
-"""
-validation = "—"
-
-[[setting]]
-key = "terminalNotifySound"
-type = "boolean"
-default = false
-status = "legacy"
-page = "notifications"
-section = "Legacy"
-title = "Terminal notification sound (legacy)"
-summary = "Superseded by the per-tier Sound switches."
-doc = """
-Legacy: superseded by the notify*Sound keys. Read once by the notification
-migration and ignored after; safe to delete once notificationsMigrated is true.
-"""
-validation = "—"
 
 [[setting]]
 key = "notificationsEnabled"
@@ -796,21 +720,6 @@ opens the session.
 validation = "—"
 
 [[setting]]
-key = "notificationsMigrated"
-type = "boolean"
-default = false
-status = "internal"
-page = "notifications"
-section = "Legacy"
-title = "Notification choices migrated"
-summary = "Set once Atlas has folded earlier notification choices into the current keys."
-doc = """
-Set once Atlas has folded your earlier terminal and agent notification choices
-into the keys above. Leave it alone.
-"""
-validation = "—"
-
-[[setting]]
 key = "notifyDisabledKinds"
 type = "string-list"
 default = []
@@ -825,21 +734,6 @@ Notification kinds you switched off in Settings > Notifications, by id, e.g.
 always show (sign-in lost) cannot be silenced.
 """
 validation = "unknown ids are ignored"
-
-[[setting]]
-key = "notifyKindsMigrated"
-type = "boolean"
-default = false
-status = "internal"
-page = "notifications"
-section = "Legacy"
-title = "Notification kinds migrated"
-summary = "Set once Atlas has folded earlier per-kind switches into notifyDisabledKinds."
-doc = """
-Set once Atlas has folded your earlier per-kind notification switches into
-notifyDisabledKinds. Leave it alone.
-"""
-validation = "—"
 
 [[setting]]
 key = "notifyAgentMinDurationMs"

@@ -122,28 +122,8 @@ const SETTINGS_DOCS: &[(&str, &str)] = &[
         "# Atlas's shared memory is the only memory in Atlas sessions: agents that keep\n# their own memory, such as Claude Code's auto memory, start with it turned\n# off. Off: each agent also keeps its own memory files. (default: true)",
     ),
     (
-        "terminalNotifications",
-        "# Legacy: superseded by notifyDisabledKinds. Read once by the notification\n# migration and ignored after; safe to delete once notificationsMigrated is\n# true. (default: true)",
-    ),
-    (
         "terminalNotifyMinDurationMs",
         "# A successful command shorter than this many milliseconds never notifies.\n# Must be between 0 and 3600000. (default: 10000)",
-    ),
-    (
-        "terminalNotifyOnFailure",
-        "# Legacy: superseded by notifyDisabledKinds. Read once by the notification\n# migration and ignored after; safe to delete once notificationsMigrated is\n# true. (default: true)",
-    ),
-    (
-        "terminalNotifyOnAttention",
-        "# Legacy: superseded by notifyDisabledKinds. Read once by the notification\n# migration and ignored after; safe to delete once notificationsMigrated is\n# true. (default: true)",
-    ),
-    (
-        "terminalNotifyNative",
-        "# Legacy: superseded by the notify*Native keys. Read once by the notification\n# migration and ignored after; safe to delete once notificationsMigrated is\n# true. (default: true)",
-    ),
-    (
-        "terminalNotifySound",
-        "# Legacy: superseded by the notify*Sound keys. Read once by the notification\n# migration and ignored after; safe to delete once notificationsMigrated is\n# true. (default: false)",
     ),
     (
         "notificationsEnabled",
@@ -186,16 +166,8 @@ const SETTINGS_DOCS: &[(&str, &str)] = &[
         "# Show Allow once / Deny buttons on permission banners. Off: the banner only\n# opens the session. (default: true)",
     ),
     (
-        "notificationsMigrated",
-        "# Set once Atlas has folded your earlier terminal and agent notification\n# choices into the keys above. Leave it alone. (default: false)",
-    ),
-    (
         "notifyDisabledKinds",
         "# Notification kinds you switched off in Settings > Notifications, by id, e.g.\n# [\"terminal-done\", \"git-behind\"]. Unknown ids are ignored; a kind that must\n# always show (sign-in lost) cannot be silenced. (default: [])",
-    ),
-    (
-        "notifyKindsMigrated",
-        "# Set once Atlas has folded your earlier per-kind notification switches into\n# notifyDisabledKinds. Leave it alone. (default: false)",
     ),
     (
         "notifyAgentMinDurationMs",

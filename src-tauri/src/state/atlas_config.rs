@@ -411,27 +411,9 @@ pub struct AppSettings {
     /// Off: each agent also keeps its own. Default ON.
     #[serde(default = "default_true")]
     pub atlas_only_memory: bool,
-    /// "Command finished": a successful command longer than
-    /// `terminal_notify_min_duration_ms` notifies. (Once the terminal master
-    /// switch; `notifications_enabled` is the master now.)
-    #[serde(default = "default_true")]
-    pub terminal_notifications: bool,
     /// A successful command shorter than this never notifies (milliseconds).
     #[serde(default = "default_terminal_notify_min_duration_ms")]
     pub terminal_notify_min_duration_ms: u32,
-    /// Notify on a non-zero exit code regardless of duration.
-    #[serde(default = "default_true")]
-    pub terminal_notify_on_failure: bool,
-    /// Notify when a command wants input (password prompt, bell, OSC 9/777).
-    #[serde(default = "default_true")]
-    pub terminal_notify_on_attention: bool,
-    /// Legacy terminal OS-banner switch; folded into the `notify_*_native`
-    /// tier keys once (`notificationsMigrated`), unused afterwards.
-    #[serde(default = "default_true")]
-    pub terminal_notify_native: bool,
-    /// Legacy terminal sound switch — migrated like the one above.
-    #[serde(default)]
-    pub terminal_notify_sound: bool,
     /// Notifications master switch: off silences every kind except sign-in problems.
     #[serde(default = "default_true")]
     pub notifications_enabled: bool,
@@ -462,15 +444,9 @@ pub struct AppSettings {
     /// Show Allow once / Deny on permission banners.
     #[serde(default = "default_true")]
     pub notify_permission_actions: bool,
-    /// Set once the legacy terminal and agent notification choices have been folded into the keys above. Not user-facing.
-    #[serde(default)]
-    pub notifications_migrated: bool,
     /// Notification kinds the user switched off in Settings (kind ids from the frontend catalog). Unknown ids are ignored; a kind that cannot be silenced ignores its entry.
     #[serde(default)]
     pub notify_disabled_kinds: Vec<String>,
-    /// Set once the per-kind switches that predate `notifyDisabledKinds` have been folded into it. Not user-facing.
-    #[serde(default)]
-    pub notify_kinds_migrated: bool,
     /// An agent turn that finished faster than this stays quiet (milliseconds); 0 = off.
     #[serde(default)]
     pub notify_agent_min_duration_ms: u32,
@@ -541,12 +517,7 @@ impl Default for AppSettings {
             memory_dreams: false,
             memory_repo_mirror: false,
             atlas_only_memory: true,
-            terminal_notifications: true,
             terminal_notify_min_duration_ms: default_terminal_notify_min_duration_ms(),
-            terminal_notify_on_failure: true,
-            terminal_notify_on_attention: true,
-            terminal_notify_native: true,
-            terminal_notify_sound: false,
             notifications_enabled: true,
             notify_needs_you_native: true,
             notify_needs_you_sound: true,
@@ -557,9 +528,7 @@ impl Default for AppSettings {
             notify_team_native: true,
             notify_team_sound: true,
             notify_permission_actions: true,
-            notifications_migrated: false,
             notify_disabled_kinds: Vec::new(),
-            notify_kinds_migrated: false,
             notify_agent_min_duration_ms: 0,
             favorite_models: Vec::new(),
         }
@@ -935,12 +904,7 @@ pub struct SettingsPatch {
     pub memory_dreams: Option<bool>,
     pub memory_repo_mirror: Option<bool>,
     pub atlas_only_memory: Option<bool>,
-    pub terminal_notifications: Option<bool>,
     pub terminal_notify_min_duration_ms: Option<u32>,
-    pub terminal_notify_on_failure: Option<bool>,
-    pub terminal_notify_on_attention: Option<bool>,
-    pub terminal_notify_native: Option<bool>,
-    pub terminal_notify_sound: Option<bool>,
     pub notifications_enabled: Option<bool>,
     pub notify_needs_you_native: Option<bool>,
     pub notify_needs_you_sound: Option<bool>,
@@ -951,9 +915,7 @@ pub struct SettingsPatch {
     pub notify_team_native: Option<bool>,
     pub notify_team_sound: Option<bool>,
     pub notify_permission_actions: Option<bool>,
-    pub notifications_migrated: Option<bool>,
     pub notify_disabled_kinds: Option<Vec<String>>,
-    pub notify_kinds_migrated: Option<bool>,
     pub notify_agent_min_duration_ms: Option<u32>,
     pub favorite_models: Option<Vec<String>>,
 }
@@ -1047,23 +1009,8 @@ impl SettingsPatch {
         if let Some(v) = self.atlas_only_memory {
             settings.atlas_only_memory = v;
         }
-        if let Some(v) = self.terminal_notifications {
-            settings.terminal_notifications = v;
-        }
         if let Some(v) = self.terminal_notify_min_duration_ms {
             settings.terminal_notify_min_duration_ms = v;
-        }
-        if let Some(v) = self.terminal_notify_on_failure {
-            settings.terminal_notify_on_failure = v;
-        }
-        if let Some(v) = self.terminal_notify_on_attention {
-            settings.terminal_notify_on_attention = v;
-        }
-        if let Some(v) = self.terminal_notify_native {
-            settings.terminal_notify_native = v;
-        }
-        if let Some(v) = self.terminal_notify_sound {
-            settings.terminal_notify_sound = v;
         }
         if let Some(v) = self.notifications_enabled {
             settings.notifications_enabled = v;
@@ -1095,14 +1042,8 @@ impl SettingsPatch {
         if let Some(v) = self.notify_permission_actions {
             settings.notify_permission_actions = v;
         }
-        if let Some(v) = self.notifications_migrated {
-            settings.notifications_migrated = v;
-        }
         if let Some(v) = &self.notify_disabled_kinds {
             settings.notify_disabled_kinds = v.clone();
-        }
-        if let Some(v) = self.notify_kinds_migrated {
-            settings.notify_kinds_migrated = v;
         }
         if let Some(v) = &self.favorite_models {
             settings.favorite_models = v.clone();
@@ -1149,11 +1090,6 @@ impl SettingsPatch {
         set_bool!(memory_dreams, "memoryDreams");
         set_bool!(memory_repo_mirror, "memoryRepoMirror");
         set_bool!(atlas_only_memory, "atlasOnlyMemory");
-        set_bool!(terminal_notifications, "terminalNotifications");
-        set_bool!(terminal_notify_on_failure, "terminalNotifyOnFailure");
-        set_bool!(terminal_notify_on_attention, "terminalNotifyOnAttention");
-        set_bool!(terminal_notify_native, "terminalNotifyNative");
-        set_bool!(terminal_notify_sound, "terminalNotifySound");
         set_bool!(notifications_enabled, "notificationsEnabled");
         set_bool!(notify_needs_you_native, "notifyNeedsYouNative");
         set_bool!(notify_needs_you_sound, "notifyNeedsYouSound");
@@ -1164,8 +1100,6 @@ impl SettingsPatch {
         set_bool!(notify_team_native, "notifyTeamNative");
         set_bool!(notify_team_sound, "notifyTeamSound");
         set_bool!(notify_permission_actions, "notifyPermissionActions");
-        set_bool!(notifications_migrated, "notificationsMigrated");
-        set_bool!(notify_kinds_migrated, "notifyKindsMigrated");
         if let Some(v) = &self.notify_disabled_kinds {
             let mut arr = toml_edit::Array::new();
             for kind in v {
@@ -2629,12 +2563,7 @@ someFutureKey = \"left alone\"
             memory_dreams: Some(!defaults.memory_dreams),
             memory_repo_mirror: Some(!defaults.memory_repo_mirror),
             atlas_only_memory: Some(!defaults.atlas_only_memory),
-            terminal_notifications: Some(!defaults.terminal_notifications),
             terminal_notify_min_duration_ms: Some(defaults.terminal_notify_min_duration_ms + 1),
-            terminal_notify_on_failure: Some(!defaults.terminal_notify_on_failure),
-            terminal_notify_on_attention: Some(!defaults.terminal_notify_on_attention),
-            terminal_notify_native: Some(!defaults.terminal_notify_native),
-            terminal_notify_sound: Some(!defaults.terminal_notify_sound),
             notifications_enabled: Some(!defaults.notifications_enabled),
             notify_needs_you_native: Some(!defaults.notify_needs_you_native),
             notify_needs_you_sound: Some(!defaults.notify_needs_you_sound),
@@ -2645,12 +2574,10 @@ someFutureKey = \"left alone\"
             notify_team_native: Some(!defaults.notify_team_native),
             notify_team_sound: Some(!defaults.notify_team_sound),
             notify_permission_actions: Some(!defaults.notify_permission_actions),
-            notifications_migrated: Some(!defaults.notifications_migrated),
             notify_disabled_kinds: Some(vec![
                 "terminal-done".to_string(),
                 "git-behind".to_string(),
             ]),
-            notify_kinds_migrated: Some(!defaults.notify_kinds_migrated),
             notify_agent_min_duration_ms: Some(defaults.notify_agent_min_duration_ms + 1),
             favorite_models: Some(vec!["claude-code:opus".to_string()]),
         };

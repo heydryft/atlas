@@ -159,35 +159,10 @@ export interface AppSettings {
    */
   atlasOnlyMemory: boolean;
   /**
-   * Legacy: superseded by notifyDisabledKinds. Read once by the notification migration and
-   * ignored after; safe to delete once notificationsMigrated is true.
-   */
-  terminalNotifications: boolean;
-  /**
    * A successful command shorter than this many milliseconds never notifies. Must be between 0
    * and 3600000.
    */
   terminalNotifyMinDurationMs: number;
-  /**
-   * Legacy: superseded by notifyDisabledKinds. Read once by the notification migration and
-   * ignored after; safe to delete once notificationsMigrated is true.
-   */
-  terminalNotifyOnFailure: boolean;
-  /**
-   * Legacy: superseded by notifyDisabledKinds. Read once by the notification migration and
-   * ignored after; safe to delete once notificationsMigrated is true.
-   */
-  terminalNotifyOnAttention: boolean;
-  /**
-   * Legacy: superseded by the notify*Native keys. Read once by the notification migration and
-   * ignored after; safe to delete once notificationsMigrated is true.
-   */
-  terminalNotifyNative: boolean;
-  /**
-   * Legacy: superseded by the notify*Sound keys. Read once by the notification migration and
-   * ignored after; safe to delete once notificationsMigrated is true.
-   */
-  terminalNotifySound: boolean;
   /**
    * Notifications master switch. Off silences every notification except sign-in problems, which
    * always show.
@@ -221,21 +196,11 @@ export interface AppSettings {
    */
   notifyPermissionActions: boolean;
   /**
-   * Set once Atlas has folded your earlier terminal and agent notification choices into the
-   * keys above. Leave it alone.
-   */
-  notificationsMigrated: boolean;
-  /**
    * Notification kinds you switched off in Settings > Notifications, by id, e.g.
    * ["terminal-done", "git-behind"]. Unknown ids are ignored; a kind that must always show
    * (sign-in lost) cannot be silenced.
    */
   notifyDisabledKinds: string[];
-  /**
-   * Set once Atlas has folded your earlier per-kind notification switches into
-   * notifyDisabledKinds. Leave it alone.
-   */
-  notifyKindsMigrated: boolean;
   /**
    * An agent turn that finished faster than this many milliseconds stays quiet; failures and
    * requests for you are never held back. 0 turns it off. Must be between 0 and 3600000.
@@ -281,12 +246,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   memoryDreams: false,
   memoryRepoMirror: false,
   atlasOnlyMemory: true,
-  terminalNotifications: true,
   terminalNotifyMinDurationMs: 10000,
-  terminalNotifyOnFailure: true,
-  terminalNotifyOnAttention: true,
-  terminalNotifyNative: true,
-  terminalNotifySound: false,
   notificationsEnabled: true,
   notifyNeedsYouNative: true,
   notifyNeedsYouSound: true,
@@ -297,9 +257,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   notifyTeamNative: true,
   notifyTeamSound: true,
   notifyPermissionActions: true,
-  notificationsMigrated: false,
   notifyDisabledKinds: [],
-  notifyKindsMigrated: false,
   notifyAgentMinDurationMs: 0,
   favoriteModels: [],
 };
@@ -316,10 +274,10 @@ export type SettingType =
 
 /**
  * Where a setting is changed: a Settings row (`live`), another part of the app
- * (`elsewhere`), only by editing the file (`file-only`), by Atlas itself
- * (`internal`), or nowhere any more (`legacy`).
+ * (`elsewhere`), only by editing the file (`file-only`),
+ * or by Atlas itself (`internal`).
  */
-export type SettingStatus = "live" | "elsewhere" | "file-only" | "internal" | "legacy";
+export type SettingStatus = "live" | "elsewhere" | "file-only" | "internal";
 
 export const SETTINGS_PAGES = [
   {
@@ -670,15 +628,6 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
       "Turn off each agent's own memory so every agent reads and writes the one shared memory.",
   },
   {
-    key: "terminalNotifications",
-    type: "boolean",
-    status: "legacy",
-    page: "notifications",
-    section: "Legacy",
-    title: "Terminal notifications (legacy)",
-    summary: "Superseded by the per-kind switches in Notifications.",
-  },
-  {
     key: "terminalNotifyMinDurationMs",
     type: "integer",
     status: "live",
@@ -689,42 +638,6 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
       "A terminal command that succeeds faster than this stays quiet. Failures always notify.",
     min: 0,
     max: 3600000,
-  },
-  {
-    key: "terminalNotifyOnFailure",
-    type: "boolean",
-    status: "legacy",
-    page: "notifications",
-    section: "Legacy",
-    title: "Notify on command failure (legacy)",
-    summary: "Superseded by the per-kind switches in Notifications.",
-  },
-  {
-    key: "terminalNotifyOnAttention",
-    type: "boolean",
-    status: "legacy",
-    page: "notifications",
-    section: "Legacy",
-    title: "Notify when a command wants input (legacy)",
-    summary: "Superseded by the per-kind switches in Notifications.",
-  },
-  {
-    key: "terminalNotifyNative",
-    type: "boolean",
-    status: "legacy",
-    page: "notifications",
-    section: "Legacy",
-    title: "Terminal system notifications (legacy)",
-    summary: "Superseded by the per-tier System notification switches.",
-  },
-  {
-    key: "terminalNotifySound",
-    type: "boolean",
-    status: "legacy",
-    page: "notifications",
-    section: "Legacy",
-    title: "Terminal notification sound (legacy)",
-    summary: "Superseded by the per-tier Sound switches.",
   },
   {
     key: "notificationsEnabled",
@@ -818,15 +731,6 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
       "Show Allow once and Deny on a permission banner, so you can answer without opening Atlas.",
   },
   {
-    key: "notificationsMigrated",
-    type: "boolean",
-    status: "internal",
-    page: "notifications",
-    section: "Legacy",
-    title: "Notification choices migrated",
-    summary: "Set once Atlas has folded earlier notification choices into the current keys.",
-  },
-  {
     key: "notifyDisabledKinds",
     type: "string-list",
     status: "live",
@@ -834,15 +738,6 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
     section: "Kinds",
     title: "Notification kinds",
     summary: "One switch per kind of notification, from command finished to Git behind.",
-  },
-  {
-    key: "notifyKindsMigrated",
-    type: "boolean",
-    status: "internal",
-    page: "notifications",
-    section: "Legacy",
-    title: "Notification kinds migrated",
-    summary: "Set once Atlas has folded earlier per-kind switches into notifyDisabledKinds.",
   },
   {
     key: "notifyAgentMinDurationMs",

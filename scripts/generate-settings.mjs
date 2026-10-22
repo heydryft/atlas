@@ -51,7 +51,7 @@ export const TYPES = [
   "optional-string",
   "table",
 ];
-export const STATUSES = ["live", "elsewhere", "file-only", "internal", "legacy"];
+export const STATUSES = ["live", "elsewhere", "file-only", "internal"];
 const PLATFORMS = ["macos", "windows", "linux"];
 /** Types whose default is "the key is absent from the file". */
 const ABSENT_BY_DEFAULT = new Set(["optional-string", "table"]);
@@ -455,8 +455,8 @@ export type SettingType = ${TYPES.map((type) => JSON.stringify(type)).join(" | "
 
 /**
  * Where a setting is changed: a Settings row (\`live\`), another part of the app
- * (\`elsewhere\`), only by editing the file (\`file-only\`), by Atlas itself
- * (\`internal\`), or nowhere any more (\`legacy\`).
+ * (\`elsewhere\`), only by editing the file (\`file-only\`),
+ * or by Atlas itself (\`internal\`).
  */
 export type SettingStatus = ${STATUSES.map((status) => JSON.stringify(status)).join(" | ")};
 
@@ -526,10 +526,8 @@ function docsWhere(setting, pages) {
       return setting.set_in;
     case "file-only":
       return "file only";
-    case "internal":
-      return "managed by Atlas";
     default:
-      return "legacy — no effect";
+      return "managed by Atlas";
   }
 }
 

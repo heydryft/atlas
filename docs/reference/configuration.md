@@ -95,156 +95,24 @@ schemaVersion = 1
 
 [settings]
 
-# Keep Atlas's directory in each opened git project out of version
-# control: `.atlas/` goes into the project's .gitignore (created if
-# needed); a dev build's `.atlas-dev/` goes into .git/info/exclude.
-# No-op on non-git projects. (default: true)
+# Keep Atlas's directory in each opened git project out of version control:
+# `.atlas/` goes into the project's .gitignore (created if needed); a dev
+# build's `.atlas-dev/` goes into .git/info/exclude. No-op on non-git
+# projects. (default: true)
 autoAddAtlasGitignore = true
 
-# Interface zoom, where 1.0 is 100%. Also driven by Cmd +/-/0.
-# Must be a number between 0.5 and 2.0. (default: 1.0)
+# Record Atlas-internal events (sign-in, agent lifecycle, file and browser
+# opens) into the Logs panel. (default: true)
+enableAtlasLogs = true
+
+# Show dotfiles and dot-directories in the explorer file tree. (default: true)
+showHiddenFiles = true
+
+# Interface zoom, where 1.0 is 100%. Also driven by Cmd +/-/0. Must be a
+# number between 0.5 and 2.0. (default: 1.0)
 uiScale = 1.0
 
-# Next-step suggestion chips in the agent chat's per-turn card.
-# Exactly "agent" or "off", nothing else. (default: "agent")
-adaptiveSuggestions = "agent"
-
-# What picking another agent does to a chat that has a conversation:
-# "new-tab" keeps it and opens the new agent in a new tab, "handoff"
-# switches in place and attaches it to the next message, "reset"
-# switches in place and starts over. (default: "reset")
-agentSwitchBehavior = "reset"
-
-# updaterIgnoredVersion: a release you chose to skip in the update
-# prompt. Absent unless one was ignored — TOML has no null, so "unset"
-# means the key simply isn't here. Delete the line to clear it; never
-# write an empty string.
-
-# Chat composer send gesture. true = Enter sends and Shift+Enter
-# inserts a newline; false = only Cmd/Ctrl+Enter sends. Cmd/Ctrl+Enter
-# sends either way. (default: true)
-enterToSend = true
-
-# Let Atlas Agent act on the window: open files at a line, switch tabs
-# and panels, fill in a chat message, type a command for you to run.
-# It never switches projects, sends for you or presses Enter. Off: its
-# UI tools are withdrawn and every call is refused. (default: true)
-agentUiNavigation = true
-
-# Let Atlas Agent act in your organisation, as you: read the recorded
-# sessions, comments, members and conversations of the organisation a
-# cloud-bound Project belongs to. Anything that reaches another person
-# asks you first. Off: its organisation tools are withdrawn and every
-# call is refused. (default: true)
-agentOrgAccess = true
-
-# Let agents search this project's code through Atlas: grep for text
-# and find files by name, in-process, respecting .gitignore and never
-# reading secret files such as .env. Off: the code tools are withdrawn
-# and every call is refused; agents use their own shell instead.
-# (default: true)
-agentCodeTools = true
-
-# Once a day, when there are new sessions, ask the memory model to
-# propose changes to shared memory (add, merge, archive, rewrite,
-# link). Proposals wait in Memory > Review; nothing is applied
-# without you. Uses the same model and consent as extraction.
-# (default: false)
-memoryDreams = false
-
-# Keep a read-only Agent Memory Repo mirror of each project's active
-# memory, as a local git repository outside the project. No remote,
-# nothing is pushed. (default: false)
-memoryRepoMirror = false
-
-# Atlas's shared memory is the only memory in Atlas sessions: agents
-# that keep a memory of their own (Claude Code's auto memory, the
-# OpenAI agent's memories) start with it off. Off: each agent also
-# keeps its own memory files. (default: true)
-atlasOnlyMemory = true
-
-# Notify when a command succeeds after running longer than
-# terminalNotifyMinDurationMs. (The master switch for all notifications
-# is notificationsEnabled.) (default: true)
-terminalNotifications = true
-
-# A successful command shorter than this many milliseconds never
-# notifies. Must be between 0 and 3600000. (default: 10000)
-terminalNotifyMinDurationMs = 10000
-
-# Notify on a non-zero exit code regardless of duration. (default: true)
-terminalNotifyOnFailure = true
-
-# Notify when a command wants input — a password prompt, a bell, or an
-# OSC 9 / OSC 777 notification from the program. (default: true)
-terminalNotifyOnAttention = true
-
-# Also raise a macOS notification when the Atlas window is not focused.
-# (default: true)
-terminalNotifyNative = true
-
-# Play a short chime with terminal notifications. (default: false)
-terminalNotifySound = false
-
-# Notifications master switch. Off silences every notification except
-# sign-in problems, which always show. (default: true)
-notificationsEnabled = true
-
-# OS banner for notifications that need you — a permission request, a
-# question, a terminal asking for input. Shown only when you are away.
-# (default: true)
-notifyNeedsYouNative = true
-
-# Sound for notifications that need you. (default: true)
-notifyNeedsYouSound = true
-
-# OS banner when an agent turn or terminal command finishes or fails.
-# Shown only when you are away. (default: true)
-notifyOutcomeNative = true
-
-# Sound for finished / failed notifications. (default: true)
-notifyOutcomeSound = true
-
-# OS banner for warnings — context nearly full, rate limited, retrying,
-# agent stopped. (default: false)
-notifyWarningNative = false
-
-# Sound for warnings. (default: false)
-notifyWarningSound = false
-
-# OS banner for Chat direct messages and @mentions. Shown only when you
-# are away. (default: true)
-notifyTeamNative = true
-
-# Sound for Chat notifications. (default: true)
-notifyTeamSound = true
-
-# Show Allow once / Deny buttons on permission banners. Off: the banner
-# only opens the session. (default: true)
-notifyPermissionActions = true
-
-# Set once Atlas has folded your earlier terminal and agent notification
-# choices into the keys above. Leave it alone. (default: false)
-notificationsMigrated = false
-
-# Notification kinds you switched off in Settings > Notifications, by id,
-# e.g. ["terminal-done", "git-behind"]. Unknown ids are ignored; a kind
-# that must always show (sign-in lost) cannot be silenced. (default: [])
-notifyDisabledKinds = []
-
-# Set once Atlas has folded your earlier per-kind notification switches
-# into notifyDisabledKinds. Leave it alone. (default: false)
-notifyKindsMigrated = false
-
-# An agent turn that finished faster than this many milliseconds stays
-# quiet; failures and requests for you are never held back. 0 turns it
-# off. Must be between 0 and 3600000. (default: 0)
-notifyAgentMinDurationMs = 0
-
-# Models you starred in the composer's model picker, as
-# "agentType:modelId", e.g. ["claude-code:opus"]. Starred models open
-# the picker on Favorites. Unknown entries are ignored. (default: [])
-favoriteModels = []
+# … one commented entry per key, in this order, to the end of the file.
 ```
 
 Note `updaterIgnoredVersion`: a key that serializes to nothing still gets its
@@ -313,12 +181,7 @@ bookkeeping), or `legacy` (read only by a migration; safe to delete).
 | `memoryDreams` | boolean | `false` | Memory › Shared memory › Nightly memory review | — |
 | `memoryRepoMirror` | boolean | `false` | Memory › Shared memory › Mirror memory as an Agent Memory Repo | — |
 | `atlasOnlyMemory` | boolean | `true` | Memory › Shared memory › Atlas is the only memory in Atlas sessions | — |
-| `terminalNotifications` | boolean | `true` | legacy — no effect | — |
 | `terminalNotifyMinDurationMs` | integer | `10000` | Notifications › Notifications › Notify on command success after | 0 ≤ n ≤ 3600000 |
-| `terminalNotifyOnFailure` | boolean | `true` | legacy — no effect | — |
-| `terminalNotifyOnAttention` | boolean | `true` | legacy — no effect | — |
-| `terminalNotifyNative` | boolean | `true` | legacy — no effect | — |
-| `terminalNotifySound` | boolean | `false` | legacy — no effect | — |
 | `notificationsEnabled` | boolean | `true` | Notifications › Notifications › Notifications | — |
 | `notifyNeedsYouNative` | boolean | `true` | Notifications › Needs you › System notification | — |
 | `notifyNeedsYouSound` | boolean | `true` | Notifications › Needs you › Sound | — |
@@ -329,9 +192,7 @@ bookkeeping), or `legacy` (read only by a migration; safe to delete).
 | `notifyTeamNative` | boolean | `true` | Notifications › Team › System notification | — |
 | `notifyTeamSound` | boolean | `true` | Notifications › Team › Sound | — |
 | `notifyPermissionActions` | boolean | `true` | Notifications › Needs you › Banner actions on permission requests | — |
-| `notificationsMigrated` | boolean | `false` | managed by Atlas | — |
 | `notifyDisabledKinds` | array of strings | `[]` | Notifications › Kinds › Notification kinds | unknown ids are ignored |
-| `notifyKindsMigrated` | boolean | `false` | managed by Atlas | — |
 | `notifyAgentMinDurationMs` | integer | `0` | Notifications › Notifications › Notify on agent finish after | 0 ≤ n ≤ 3600000 |
 | `favoriteModels` | array of strings | `[]` | the star in the composer's model picker | entries are `agentType:modelId`; unknown entries are ignored |
 
