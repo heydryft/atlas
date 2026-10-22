@@ -447,6 +447,7 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .manage(commands::browser::BrowserState::new())
+        .manage(commands::quit_guard::QuitGuardState::default())
         .manage(TerminalState::new())
         .manage(commands::modelchat::ModelChatState::new())
         .manage(FileIndexState::new())
@@ -480,6 +481,14 @@ pub fn run() {
                     window
                         .state::<commands::instruction_sync::InstructionSyncState>()
                         .drop_window(label);
+                }
+                // Closing the main window ends Atlas, so it asks the same
+                // question a quit does (`confirmQuitWhileRunning`).
+                tauri::WindowEvent::CloseRequested { api, .. }
+                    if window.label() == "main"
+                        && commands::quit_guard::hold_quit(window.app_handle()) =>
+                {
+                    api.prevent_close();
                 }
                 // Coming back to Atlas is when a stale Pull badge misleads.
                 tauri::WindowEvent::Focused(true) => {
@@ -957,6 +966,8 @@ pub fn run() {
             commands::skills::pack_uninstall,
             commands::skills::pack_projections,
             commands::skills::pack_components_list,
+            commands::quit_guard::quit_guard_ready,
+            commands::quit_guard::quit_guard_answer,
         ])
         .build(context)
         .expect("error while building Atlas")
@@ -964,7 +975,13 @@ pub fn run() {
             // Apply-on-quit: if the user chose "Later" for a staged update, swap
             // it in on the way out so the next launch is the new version.
             match event {
-                tauri::RunEvent::ExitRequested { .. } => {
+                tauri::RunEvent::ExitRequested { code, api, .. } => {
+                    // A user quit (no code) with an agent mid-turn asks first;
+                    // the frontend answers through `quit_guard_answer`.
+                    if code.is_none() && commands::quit_guard::hold_quit(app_handle) {
+                        api.prevent_exit();
+                        return;
+                    }
                     // Quit sweep (M7): stop native turns (cancel tokens kill
                     // tool process groups) and tear down every ACP subprocess
                     // (dropping each driver's shutdown channel closes the

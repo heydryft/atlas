@@ -17,6 +17,7 @@ import MarkdownWorker from "./markdown.worker?worker";
 import "@/styles/hljs.css";
 import { cn } from "./utils";
 import { isScrollHot } from "./scroll-hot";
+import { openLink } from "@/features/browser/lib/open-link";
 
 // Insertion-ordered Map → simple LRU via delete+set on hit. Bounded so a
 // thread of thousands of unique strings can't grow this unbounded.
@@ -518,13 +519,12 @@ export function CachedMarkdown({ source, className, unstyled, priority = 0 }: Ca
         }, 1200);
         return;
       }
-      // External links: open in the system browser via the opener plugin
-      // rather than letting an `<a>` navigate the WKWebView away from Atlas.
+      // External links open where `linkTarget` says (`openLink`), never by
+      // letting an `<a>` navigate the WKWebView away from Atlas.
       const anchor = target?.closest?.("a");
       if (anchor instanceof HTMLAnchorElement && anchor.href && /^https?:/i.test(anchor.href)) {
         e.preventDefault();
-        const href = anchor.href;
-        void import("@tauri-apps/plugin-opener").then((m) => m.openUrl(href)).catch(() => {});
+        void openLink(anchor.href).catch(() => {});
       }
     };
     node.addEventListener("click", onClick);

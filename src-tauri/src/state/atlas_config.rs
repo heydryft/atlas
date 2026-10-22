@@ -233,6 +233,70 @@ pub enum AgentSwitchBehavior {
     Reset,
 }
 
+/// How wide the chat transcript and composer column may grow.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ChatWidth {
+    #[default]
+    Normal,
+    Wide,
+    Full,
+}
+
+/// Clock style for every time of day Atlas shows. `System` follows the OS
+/// locale.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TimeFormat {
+    #[default]
+    #[serde(rename = "system")]
+    System,
+    #[serde(rename = "12h")]
+    TwelveHour,
+    #[serde(rename = "24h")]
+    TwentyFourHour,
+}
+
+/// Colours for added and removed lines in every diff. `Theme` uses the
+/// theme's green and red; `BlueOrange` swaps them for blue and orange, which
+/// stay apart under red-green colour blindness.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DiffPalette {
+    #[default]
+    Theme,
+    BlueOrange,
+}
+
+/// The order of chats in the session sidebar.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SidebarSort {
+    #[default]
+    Recent,
+    Created,
+}
+
+/// Where a link clicked in a chat or a terminal opens.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum LinkTarget {
+    #[default]
+    System,
+    Atlas,
+}
+
+/// What the built-in browser's address bar searches with.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SearchEngine {
+    #[default]
+    Google,
+    Duckduckgo,
+    Bing,
+    Brave,
+    Kagi,
+}
+
 /// User-facing toggles surfaced in Settings → General. Moved out of
 /// `state.json`'s `AppState.settings` (issue #64) into its own validated,
 /// human-editable `config.toml`.
@@ -430,6 +494,58 @@ pub struct AppSettings {
     /// Models starred in the composer's model picker, as `agentType:modelId`. Unknown entries are ignored.
     #[serde(default)]
     pub favorite_models: Vec<String>,
+    /// Ask before deleting a chat from the sidebar or history. Archiving never
+    /// asks: it can be undone. Default ON.
+    #[serde(default = "default_true")]
+    pub confirm_delete_chat: bool,
+    /// Ask before quitting while an agent is mid-turn. A second Quit while
+    /// the question is open quits anyway. Default ON. See `commands::quit_guard`.
+    #[serde(default = "default_true")]
+    pub confirm_quit_while_running: bool,
+    /// The agent a new chat starts with: `atlas-agent` or an installed ACP
+    /// agent's id. One that isn't installed falls back to Atlas Agent.
+    #[serde(default = "default_agent")]
+    pub default_agent: String,
+    /// Chat column width.
+    #[serde(default)]
+    pub chat_width: ChatWidth,
+    /// Wrap long lines in chat code blocks; off scrolls them sideways.
+    #[serde(default = "default_true")]
+    pub chat_code_wrap: bool,
+    /// Session sidebar order.
+    #[serde(default)]
+    pub sidebar_sort: SidebarSort,
+    /// 12- or 24-hour clock, or the system's.
+    #[serde(default)]
+    pub time_format: TimeFormat,
+    /// Interface font family (a CSS font-family list); empty uses the system font.
+    #[serde(default)]
+    pub ui_font_family: String,
+    /// Code font family for the editor, terminal and chat code; empty uses the default.
+    #[serde(default)]
+    pub code_font_family: String,
+    /// Editor font size in pixels.
+    #[serde(default = "default_font_size")]
+    pub editor_font_size: u32,
+    /// Terminal font size in pixels.
+    #[serde(default = "default_font_size")]
+    pub terminal_font_size: u32,
+    /// Hide whitespace-only changes in read-only diffs. Never applied where a
+    /// diff can be staged, since a patch without whitespace no longer applies.
+    #[serde(default)]
+    pub diff_ignore_whitespace: bool,
+    /// Multi-file diffs open with every file collapsed.
+    #[serde(default)]
+    pub diff_files_collapsed: bool,
+    /// Diff colours.
+    #[serde(default)]
+    pub diff_palette: DiffPalette,
+    /// Where chat and terminal links open.
+    #[serde(default)]
+    pub link_target: LinkTarget,
+    /// The built-in browser's search engine.
+    #[serde(default)]
+    pub browser_search_engine: SearchEngine,
 }
 
 fn default_true() -> bool {
@@ -450,6 +566,18 @@ pub fn default_icon_theme() -> String {
 
 pub fn default_embedding_model() -> String {
     "all-MiniLM-L6-v2".to_string()
+}
+
+pub fn default_agent() -> String {
+    "atlas-agent".to_string()
+}
+
+pub const DEFAULT_FONT_SIZE: u32 = 13;
+pub const MIN_FONT_SIZE: u32 = 8;
+pub const MAX_FONT_SIZE: u32 = 32;
+
+pub fn default_font_size() -> u32 {
+    DEFAULT_FONT_SIZE
 }
 
 pub fn default_ui_scale() -> f32 {
@@ -506,6 +634,22 @@ impl Default for AppSettings {
             notify_disabled_kinds: Vec::new(),
             notify_agent_min_duration_ms: 0,
             favorite_models: Vec::new(),
+            confirm_delete_chat: true,
+            confirm_quit_while_running: true,
+            default_agent: default_agent(),
+            chat_width: ChatWidth::default(),
+            chat_code_wrap: true,
+            sidebar_sort: SidebarSort::default(),
+            time_format: TimeFormat::default(),
+            ui_font_family: String::new(),
+            code_font_family: String::new(),
+            editor_font_size: DEFAULT_FONT_SIZE,
+            terminal_font_size: DEFAULT_FONT_SIZE,
+            diff_ignore_whitespace: false,
+            diff_files_collapsed: false,
+            diff_palette: DiffPalette::default(),
+            link_target: LinkTarget::default(),
+            browser_search_engine: SearchEngine::default(),
         }
     }
 }
@@ -614,6 +758,37 @@ pub fn validate(settings: &AppSettings) -> Result<(), ValidationIssue> {
         return Err(ValidationIssue {
             key: "iconTheme",
             message: "must be a plain id: letters, digits, dot, dash or underscore".to_string(),
+        });
+    }
+    for (key, size) in [
+        ("editorFontSize", settings.editor_font_size),
+        ("terminalFontSize", settings.terminal_font_size),
+    ] {
+        if !(MIN_FONT_SIZE..=MAX_FONT_SIZE).contains(&size) {
+            return Err(ValidationIssue {
+                key,
+                message: format!("must be between {MIN_FONT_SIZE} and {MAX_FONT_SIZE}, got {size}"),
+            });
+        }
+    }
+    // A font family is written into a CSS custom property; a brace or a
+    // semicolon is never part of one and would end the declaration.
+    for (key, family) in [
+        ("uiFontFamily", &settings.ui_font_family),
+        ("codeFontFamily", &settings.code_font_family),
+    ] {
+        if family.contains(['{', '}', ';', '<', '>']) || family.len() > 200 {
+            return Err(ValidationIssue {
+                key,
+                message: "must be a CSS font-family list, such as \"Inter\", sans-serif"
+                    .to_string(),
+            });
+        }
+    }
+    if settings.default_agent.trim().is_empty() {
+        return Err(ValidationIssue {
+            key: "defaultAgent",
+            message: "must not be empty; use \"atlas-agent\" for Atlas Agent".to_string(),
         });
     }
     // Names a file (`icons/app-icons/<id>.icns`); same reasoning as `iconTheme`.
@@ -893,6 +1068,22 @@ pub struct SettingsPatch {
     pub notify_disabled_kinds: Option<Vec<String>>,
     pub notify_agent_min_duration_ms: Option<u32>,
     pub favorite_models: Option<Vec<String>>,
+    pub confirm_delete_chat: Option<bool>,
+    pub confirm_quit_while_running: Option<bool>,
+    pub default_agent: Option<String>,
+    pub chat_width: Option<ChatWidth>,
+    pub chat_code_wrap: Option<bool>,
+    pub sidebar_sort: Option<SidebarSort>,
+    pub time_format: Option<TimeFormat>,
+    pub ui_font_family: Option<String>,
+    pub code_font_family: Option<String>,
+    pub editor_font_size: Option<u32>,
+    pub terminal_font_size: Option<u32>,
+    pub diff_ignore_whitespace: Option<bool>,
+    pub diff_files_collapsed: Option<bool>,
+    pub diff_palette: Option<DiffPalette>,
+    pub link_target: Option<LinkTarget>,
+    pub browser_search_engine: Option<SearchEngine>,
 }
 
 impl SettingsPatch {
@@ -1026,6 +1217,31 @@ impl SettingsPatch {
         if let Some(v) = self.notify_agent_min_duration_ms {
             settings.notify_agent_min_duration_ms = v;
         }
+        macro_rules! copy {
+            ($($field:ident),* $(,)?) => {
+                $(if let Some(v) = &self.$field {
+                    settings.$field = v.clone();
+                })*
+            };
+        }
+        copy!(
+            confirm_delete_chat,
+            confirm_quit_while_running,
+            default_agent,
+            chat_width,
+            chat_code_wrap,
+            sidebar_sort,
+            time_format,
+            ui_font_family,
+            code_font_family,
+            editor_font_size,
+            terminal_font_size,
+            diff_ignore_whitespace,
+            diff_files_collapsed,
+            diff_palette,
+            link_target,
+            browser_search_engine,
+        );
     }
 
     /// Mutate only the touched keys of `doc["settings"]` — everything else
@@ -1075,6 +1291,41 @@ impl SettingsPatch {
         set_bool!(notify_team_native, "notifyTeamNative");
         set_bool!(notify_team_sound, "notifyTeamSound");
         set_bool!(notify_permission_actions, "notifyPermissionActions");
+        set_bool!(confirm_delete_chat, "confirmDeleteChat");
+        set_bool!(confirm_quit_while_running, "confirmQuitWhileRunning");
+        set_bool!(chat_code_wrap, "chatCodeWrap");
+        set_bool!(diff_ignore_whitespace, "diffIgnoreWhitespace");
+        set_bool!(diff_files_collapsed, "diffFilesCollapsed");
+        macro_rules! set_str {
+            ($field:ident, $key:literal) => {
+                if let Some(v) = &self.$field {
+                    table[$key] = toml_edit::value(v.as_str());
+                }
+            };
+        }
+        set_str!(default_agent, "defaultAgent");
+        set_str!(ui_font_family, "uiFontFamily");
+        set_str!(code_font_family, "codeFontFamily");
+        // Enums are written as the exact string serde reads back.
+        macro_rules! set_enum {
+            ($field:ident, $key:literal) => {
+                if let Some(v) = &self.$field {
+                    table[$key] = toml_edit::value(enum_str(v));
+                }
+            };
+        }
+        set_enum!(chat_width, "chatWidth");
+        set_enum!(sidebar_sort, "sidebarSort");
+        set_enum!(time_format, "timeFormat");
+        set_enum!(diff_palette, "diffPalette");
+        set_enum!(link_target, "linkTarget");
+        set_enum!(browser_search_engine, "browserSearchEngine");
+        if let Some(v) = self.editor_font_size {
+            table["editorFontSize"] = toml_edit::value(i64::from(v));
+        }
+        if let Some(v) = self.terminal_font_size {
+            table["terminalFontSize"] = toml_edit::value(i64::from(v));
+        }
         if let Some(v) = &self.notify_disabled_kinds {
             let mut arr = toml_edit::Array::new();
             for kind in v {
@@ -1163,6 +1414,14 @@ fn fallback_unknown_theme(settings: &mut AppSettings) {
     if let Err(error) = atlas_theme::get_theme(&settings.theme) {
         tracing::warn!(target: "atlas::themes", theme = %settings.theme, "theme in config.toml does not resolve ({error}); using atlas for this session");
         settings.theme = default_theme();
+    }
+}
+
+/// A unit enum's serde string, e.g. `ChatWidth::Wide` → `"wide"`.
+fn enum_str<T: Serialize>(value: &T) -> String {
+    match serde_json::to_value(value) {
+        Ok(serde_json::Value::String(s)) => s,
+        _ => unreachable!("a settings enum serializes to a string"),
     }
 }
 
@@ -2150,6 +2409,22 @@ someFutureKey = \"left alone\"
             ]),
             notify_agent_min_duration_ms: Some(defaults.notify_agent_min_duration_ms + 1),
             favorite_models: Some(vec!["claude-code:opus".to_string()]),
+            confirm_delete_chat: Some(!defaults.confirm_delete_chat),
+            confirm_quit_while_running: Some(!defaults.confirm_quit_while_running),
+            default_agent: Some("claude-code".to_string()),
+            chat_width: Some(ChatWidth::Wide),
+            chat_code_wrap: Some(!defaults.chat_code_wrap),
+            sidebar_sort: Some(SidebarSort::Created),
+            time_format: Some(TimeFormat::TwentyFourHour),
+            ui_font_family: Some("Inter, sans-serif".to_string()),
+            code_font_family: Some("JetBrains Mono".to_string()),
+            editor_font_size: Some(15),
+            terminal_font_size: Some(14),
+            diff_ignore_whitespace: Some(!defaults.diff_ignore_whitespace),
+            diff_files_collapsed: Some(!defaults.diff_files_collapsed),
+            diff_palette: Some(DiffPalette::BlueOrange),
+            link_target: Some(LinkTarget::Atlas),
+            browser_search_engine: Some(SearchEngine::Duckduckgo),
         };
         let mut expected = defaults.clone();
         patch.apply_to(&mut expected);

@@ -4,7 +4,7 @@
     {
       "id": "general",
       "title": "General",
-      "description": "Interface, the app icon, and how Atlas treats your project's files."
+      "description": "Interface, fonts, confirmations, the built-in browser, and how Atlas treats your project's files."
     },
     {
       "id": "appearance",
@@ -19,7 +19,7 @@
     {
       "id": "chat",
       "title": "Chat",
-      "description": "The composer, switching agents, and what Atlas Agent may do."
+      "description": "New chats, the composer, layout, switching agents, and what Atlas Agent may do."
     },
     {
       "id": "memory",
@@ -34,7 +34,7 @@
     {
       "id": "source-control",
       "title": "Source Control",
-      "description": "Git in the editor and in the background."
+      "description": "Git in the editor, diffs, and in the background."
     },
     {
       "id": "privacy",
@@ -600,6 +600,232 @@
       "default": "[]",
       "doc": "Models you starred in the composer's model picker, as \"agentType:modelId\", e.g. [\"claude-code:opus\"]. Starred models open the picker on Favorites. Unknown entries are ignored.",
       "validation": "entries are `agentType:modelId`; unknown entries are ignored"
+    },
+    {
+      "key": "confirmDeleteChat",
+      "type": "boolean",
+      "status": "live",
+      "page": "general",
+      "section": "Confirmations",
+      "title": "Confirm before deleting a chat",
+      "summary": "Ask first when you delete a chat from the sidebar or history.",
+      "default": "true",
+      "doc": "Ask before deleting a chat from the sidebar or the history. A deleted chat's transcript stays with its agent, but Atlas forgets the chat. Archiving never asks, because it can be undone.",
+      "validation": "—"
+    },
+    {
+      "key": "confirmQuitWhileRunning",
+      "type": "boolean",
+      "status": "live",
+      "page": "general",
+      "section": "Confirmations",
+      "title": "Confirm before quitting while an agent is running",
+      "summary": "Ask first when you quit Atlas with an agent in the middle of a turn.",
+      "default": "true",
+      "doc": "Ask before quitting while an agent is in the middle of a turn, since quitting stops it. Quitting again while the question is open quits anyway.",
+      "validation": "—"
+    },
+    {
+      "key": "defaultAgent",
+      "type": "string",
+      "status": "live",
+      "page": "chat",
+      "section": "New chats",
+      "title": "Default agent",
+      "summary": "The agent a new chat starts with.",
+      "project": true,
+      "default": "\"atlas-agent\"",
+      "doc": "The agent a new chat starts with: \"atlas-agent\" for Atlas Agent, or the id of an installed ACP agent, such as \"claude-code\". An agent that isn't installed falls back to Atlas Agent.",
+      "validation": "a non-empty agent id; one that isn't installed falls back to Atlas Agent"
+    },
+    {
+      "key": "chatWidth",
+      "type": "enum",
+      "status": "live",
+      "page": "chat",
+      "section": "Layout",
+      "title": "Chat width",
+      "summary": "How wide the conversation and the composer may grow.",
+      "values": [
+        "normal",
+        "wide",
+        "full"
+      ],
+      "default": "\"normal\"",
+      "doc": "How wide the conversation and the composer may grow: \"normal\" (760 pixels), \"wide\" (1080 pixels) or \"full\" (the whole panel).",
+      "validation": "exactly one of these three strings"
+    },
+    {
+      "key": "chatCodeWrap",
+      "type": "boolean",
+      "status": "live",
+      "page": "chat",
+      "section": "Layout",
+      "title": "Wrap code in chat",
+      "summary": "Wrap long lines in a chat's code blocks instead of scrolling sideways.",
+      "default": "true",
+      "doc": "Wrap long lines in a chat's code blocks. Off: they keep their lines and scroll sideways.",
+      "validation": "—"
+    },
+    {
+      "key": "sidebarSort",
+      "type": "enum",
+      "status": "live",
+      "page": "chat",
+      "section": "Layout",
+      "title": "Sort chats by",
+      "summary": "Order the sidebar's chats by their latest activity or by when they started.",
+      "values": [
+        "recent",
+        "created"
+      ],
+      "default": "\"recent\"",
+      "doc": "The order of chats in the sidebar: \"recent\" puts the chat with the latest activity first, \"created\" the one started most recently.",
+      "validation": "exactly one of these two strings"
+    },
+    {
+      "key": "timeFormat",
+      "type": "enum",
+      "status": "live",
+      "page": "general",
+      "section": "Interface",
+      "title": "Time format",
+      "summary": "Show times on a 12-hour or 24-hour clock, or as your system does.",
+      "values": [
+        "system",
+        "12h",
+        "24h"
+      ],
+      "default": "\"system\"",
+      "doc": "The clock for every time of day Atlas shows: \"12h\", \"24h\", or \"system\" to follow your system's region settings.",
+      "validation": "exactly one of these three strings"
+    },
+    {
+      "key": "uiFontFamily",
+      "type": "string",
+      "status": "live",
+      "page": "general",
+      "section": "Fonts",
+      "title": "Interface font",
+      "summary": "The font for Atlas's interface and chats. Empty uses the system font.",
+      "default": "\"\"",
+      "doc": "The font for Atlas's interface and chats, as a CSS font-family list such as \"Inter, sans-serif\". Empty uses the system font. A font that isn't installed falls through to the next one in the list.",
+      "validation": "a CSS font-family list, at most 200 characters, with no `{`, `}`, `;`, `<` or `>`; empty uses the system font"
+    },
+    {
+      "key": "codeFontFamily",
+      "type": "string",
+      "status": "live",
+      "page": "general",
+      "section": "Fonts",
+      "title": "Code font",
+      "summary": "The font for the editor, the terminal and code in chats. Empty uses the default.",
+      "default": "\"\"",
+      "doc": "The font for the editor, the terminal and code in chats, as a CSS font-family list such as \"JetBrains Mono, monospace\". Empty uses Atlas's default monospace fonts.",
+      "validation": "a CSS font-family list, at most 200 characters, with no `{`, `}`, `;`, `<` or `>`; empty uses the default"
+    },
+    {
+      "key": "editorFontSize",
+      "type": "integer",
+      "status": "live",
+      "page": "general",
+      "section": "Fonts",
+      "title": "Editor font size",
+      "summary": "The code editor's font size, in pixels.",
+      "min": 8,
+      "max": 32,
+      "default": "13",
+      "doc": "The code editor's font size, in pixels. The interface zoom scales it along with everything else.",
+      "validation": "8 ≤ n ≤ 32"
+    },
+    {
+      "key": "terminalFontSize",
+      "type": "integer",
+      "status": "live",
+      "page": "general",
+      "section": "Fonts",
+      "title": "Terminal font size",
+      "summary": "The terminal's font size, in pixels.",
+      "min": 8,
+      "max": 32,
+      "default": "13",
+      "doc": "The terminal's font size, in pixels. The interface zoom scales it along with everything else.",
+      "validation": "8 ≤ n ≤ 32"
+    },
+    {
+      "key": "diffIgnoreWhitespace",
+      "type": "boolean",
+      "status": "live",
+      "page": "source-control",
+      "section": "Diffs",
+      "title": "Hide whitespace changes",
+      "summary": "Leave out lines that only changed whitespace when you review a diff.",
+      "default": "false",
+      "doc": "Leave out changes that are only whitespace in diffs you read: a file's diff, a commit, and a chat's changes. Diffs you stage from always show every change, since a patch without the whitespace no longer applies.",
+      "validation": "—"
+    },
+    {
+      "key": "diffFilesCollapsed",
+      "type": "boolean",
+      "status": "live",
+      "page": "source-control",
+      "section": "Diffs",
+      "title": "Start files collapsed",
+      "summary": "Open a diff of several files with each one collapsed to its header.",
+      "default": "false",
+      "doc": "Open a diff of several files, such as a commit or your changes, with each file collapsed to its header. Off: every file starts expanded.",
+      "validation": "—"
+    },
+    {
+      "key": "diffPalette",
+      "type": "enum",
+      "status": "live",
+      "page": "source-control",
+      "section": "Diffs",
+      "title": "Diff colours",
+      "summary": "Use the theme's green and red for changes, or blue and orange.",
+      "values": [
+        "theme",
+        "blue-orange"
+      ],
+      "default": "\"theme\"",
+      "doc": "The colours for added and removed lines: \"theme\" uses the theme's green and red, \"blue-orange\" uses its blue and orange, which stay distinct with red-green colour blindness.",
+      "validation": "exactly one of these two strings"
+    },
+    {
+      "key": "linkTarget",
+      "type": "enum",
+      "status": "live",
+      "page": "general",
+      "section": "Browser",
+      "title": "Open links in",
+      "summary": "Open links from chats and the terminal in your browser or in Atlas's.",
+      "values": [
+        "system",
+        "atlas"
+      ],
+      "default": "\"system\"",
+      "doc": "Where a link clicked in a chat or the terminal opens: \"system\" in your default browser, \"atlas\" in a browser tab inside Atlas.",
+      "validation": "exactly one of these two strings"
+    },
+    {
+      "key": "browserSearchEngine",
+      "type": "enum",
+      "status": "live",
+      "page": "general",
+      "section": "Browser",
+      "title": "Search engine",
+      "summary": "What the built-in browser searches with when you type words, not an address.",
+      "values": [
+        "google",
+        "duckduckgo",
+        "bing",
+        "brave",
+        "kagi"
+      ],
+      "default": "\"google\"",
+      "doc": "What the built-in browser's address bar searches with when what you type isn't an address.",
+      "validation": "exactly one of these five strings"
     }
   ]
 }

@@ -97,6 +97,8 @@ import { FeedbackPanel } from "@/features/feedback/components/feedback-panel";
 import { UpdateAvailableModal } from "@/features/updater/components/update-available-modal";
 import { LoadingOrganisationOverlay } from "@/features/organisations/components/loading-organisation-overlay";
 import { StopAgentsDialog } from "@/features/projects/components/stop-agents-dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useQuitGuard } from "@/features/app/lib/use-quit-guard";
 import { RemoveAgentDialog } from "@/features/agents/components/remove-agent-dialog";
 import { useOrgStore } from "@/features/organisations/stores/org-store";
 import { useActiveOrgProjects } from "@/features/projects/lib/org-scope";
@@ -134,6 +136,7 @@ import { ConnectDialog } from "@/features/auth/components/connect-dialog";
 import { clampScale, SCALE_STEP, DEFAULT_SCALE } from "@/features/settings/lib/ui-scale";
 import { listenModelDone } from "@/features/settings/lib/models-api";
 import { useModelsStore } from "@/features/settings/stores/models-store";
+import { useLoadProjectSettings } from "@/features/settings/lib/use-scoped-setting";
 
 /** Minimum gap between two wake-triggered account re-pulls. Long enough that a
  *  burst of focus edges (Space switches) costs one pull; short enough that a
@@ -648,6 +651,10 @@ export function App() {
     }
   };
   const currentProject = useAppStore.use.currentProject();
+  // The open project's `.atlas/config.toml`, read before anything acts in the
+  // project: a new chat's agent (`defaultAgent`) is decided synchronously.
+  useLoadProjectSettings(currentProject?.path);
+  useQuitGuard();
 
   // Global agent event bus. One listener routes atlas-agents SessionDelta
   // events into the chat-store, queues permission requests for the
@@ -1469,6 +1476,7 @@ export function App() {
       <ConnectDialog />
       <LoadingOrganisationOverlay />
       <StopAgentsDialog />
+      <ConfirmDialog />
       <RemoveAgentDialog />
       <BrowserOverlayWatcher />
       {/* Renders nothing at all until a glyph-based icon theme is in use, and

@@ -213,3 +213,77 @@ notifyAgentMinDurationMs = 0
 # e.g. ["claude-code:opus"]. Starred models open the picker on Favorites.
 # Unknown entries are ignored. (default: [])
 favoriteModels = []
+
+# Ask before deleting a chat from the sidebar or the history. A deleted chat's
+# transcript stays with its agent, but Atlas forgets the chat. Archiving never
+# asks, because it can be undone. (default: true)
+confirmDeleteChat = true
+
+# Ask before quitting while an agent is in the middle of a turn, since
+# quitting stops it. Quitting again while the question is open quits anyway.
+# (default: true)
+confirmQuitWhileRunning = true
+
+# The agent a new chat starts with: "atlas-agent" for Atlas Agent, or the id
+# of an installed ACP agent, such as "claude-code". An agent that isn't
+# installed falls back to Atlas Agent. (default: "atlas-agent") A project can
+# override it in its own .atlas/config.toml.
+defaultAgent = "atlas-agent"
+
+# How wide the conversation and the composer may grow: "normal" (760 pixels),
+# "wide" (1080 pixels) or "full" (the whole panel). (default: "normal")
+chatWidth = "normal"
+
+# Wrap long lines in a chat's code blocks. Off: they keep their lines and
+# scroll sideways. (default: true)
+chatCodeWrap = true
+
+# The order of chats in the sidebar: "recent" puts the chat with the latest
+# activity first, "created" the one started most recently. (default: "recent")
+sidebarSort = "recent"
+
+# The clock for every time of day Atlas shows: "12h", "24h", or "system" to
+# follow your system's region settings. (default: "system")
+timeFormat = "system"
+
+# The font for Atlas's interface and chats, as a CSS font-family list such as
+# "Inter, sans-serif". Empty uses the system font. A font that isn't installed
+# falls through to the next one in the list. (default: "")
+uiFontFamily = ""
+
+# The font for the editor, the terminal and code in chats, as a CSS
+# font-family list such as "JetBrains Mono, monospace". Empty uses Atlas's
+# default monospace fonts. (default: "")
+codeFontFamily = ""
+
+# The code editor's font size, in pixels. The interface zoom scales it along
+# with everything else. (default: 13)
+editorFontSize = 13
+
+# The terminal's font size, in pixels. The interface zoom scales it along with
+# everything else. (default: 13)
+terminalFontSize = 13
+
+# Leave out changes that are only whitespace in diffs you read: a file's diff,
+# a commit, and a chat's changes. Diffs you stage from always show every
+# change, since a patch without the whitespace no longer applies. (default:
+# false)
+diffIgnoreWhitespace = false
+
+# Open a diff of several files, such as a commit or your changes, with each
+# file collapsed to its header. Off: every file starts expanded. (default:
+# false)
+diffFilesCollapsed = false
+
+# The colours for added and removed lines: "theme" uses the theme's green and
+# red, "blue-orange" uses its blue and orange, which stay distinct with
+# red-green colour blindness. (default: "theme")
+diffPalette = "theme"
+
+# Where a link clicked in a chat or the terminal opens: "system" in your
+# default browser, "atlas" in a browser tab inside Atlas. (default: "system")
+linkTarget = "system"
+
+# What the built-in browser's address bar searches with when what you type
+# isn't an address. (default: "google")
+browserSearchEngine = "google"

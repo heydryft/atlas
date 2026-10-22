@@ -195,6 +195,22 @@ bookkeeping).
 | `notifyDisabledKinds` | array of strings | `[]` | Notifications › Kinds › Notification kinds | unknown ids are ignored |
 | `notifyAgentMinDurationMs` | integer | `0` | Notifications › Notifications › Notify on agent finish after | 0 ≤ n ≤ 3600000 |
 | `favoriteModels` | array of strings | `[]` | the star in the composer's model picker | entries are `agentType:modelId`; unknown entries are ignored |
+| `confirmDeleteChat` | boolean | `true` | General › Confirmations › Confirm before deleting a chat | — |
+| `confirmQuitWhileRunning` | boolean | `true` | General › Confirmations › Confirm before quitting while an agent is running | — |
+| `defaultAgent` | string | `"atlas-agent"` | Chat › New chats › Default agent (per project too) | a non-empty agent id; one that isn't installed falls back to Atlas Agent |
+| `chatWidth` | `"normal"` \| `"wide"` \| `"full"` | `"normal"` | Chat › Layout › Chat width | exactly one of these three strings |
+| `chatCodeWrap` | boolean | `true` | Chat › Layout › Wrap code in chat | — |
+| `sidebarSort` | `"recent"` \| `"created"` | `"recent"` | Chat › Layout › Sort chats by | exactly one of these two strings |
+| `timeFormat` | `"system"` \| `"12h"` \| `"24h"` | `"system"` | General › Interface › Time format | exactly one of these three strings |
+| `uiFontFamily` | string | `""` | General › Fonts › Interface font | a CSS font-family list, at most 200 characters, with no `{`, `}`, `;`, `<` or `>`; empty uses the system font |
+| `codeFontFamily` | string | `""` | General › Fonts › Code font | a CSS font-family list, at most 200 characters, with no `{`, `}`, `;`, `<` or `>`; empty uses the default |
+| `editorFontSize` | integer | `13` | General › Fonts › Editor font size | 8 ≤ n ≤ 32 |
+| `terminalFontSize` | integer | `13` | General › Fonts › Terminal font size | 8 ≤ n ≤ 32 |
+| `diffIgnoreWhitespace` | boolean | `false` | Source Control › Diffs › Hide whitespace changes | — |
+| `diffFilesCollapsed` | boolean | `false` | Source Control › Diffs › Start files collapsed | — |
+| `diffPalette` | `"theme"` \| `"blue-orange"` | `"theme"` | Source Control › Diffs › Diff colours | exactly one of these two strings |
+| `linkTarget` | `"system"` \| `"atlas"` | `"system"` | General › Browser › Open links in | exactly one of these two strings |
+| `browserSearchEngine` | `"google"` \| `"duckduckgo"` \| `"bing"` \| `"brave"` \| `"kagi"` | `"google"` | General › Browser › Search engine | exactly one of these five strings |
 
 <!-- /generated:settings -->
 

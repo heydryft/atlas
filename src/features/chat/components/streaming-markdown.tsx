@@ -13,6 +13,7 @@ import {
   isIncompleteCodeFence,
 } from "@/lib/markdown-blocks";
 import { cn } from "@/lib/utils";
+import { openLink } from "@/features/browser/lib/open-link";
 
 /**
  * Block-level markdown renderer for the chat thread. Splits the message into
@@ -127,8 +128,7 @@ const TransientMarkdown = memo(function TransientMarkdown({
       const anchor = (e.target as HTMLElement | null)?.closest?.("a");
       if (anchor instanceof HTMLAnchorElement && anchor.href && /^https?:/i.test(anchor.href)) {
         e.preventDefault();
-        const href = anchor.href;
-        void import("@tauri-apps/plugin-opener").then((m) => m.openUrl(href)).catch(() => {});
+        void openLink(anchor.href).catch(() => {});
       }
     };
     node.addEventListener("click", onClick);

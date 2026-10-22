@@ -177,6 +177,70 @@ const SETTINGS_DOCS: &[(&str, &str)] = &[
         "favoriteModels",
         "# Models you starred in the composer's model picker, as \"agentType:modelId\",\n# e.g. [\"claude-code:opus\"]. Starred models open the picker on Favorites.\n# Unknown entries are ignored. (default: [])",
     ),
+    (
+        "confirmDeleteChat",
+        "# Ask before deleting a chat from the sidebar or the history. A deleted chat's\n# transcript stays with its agent, but Atlas forgets the chat. Archiving never\n# asks, because it can be undone. (default: true)",
+    ),
+    (
+        "confirmQuitWhileRunning",
+        "# Ask before quitting while an agent is in the middle of a turn, since\n# quitting stops it. Quitting again while the question is open quits anyway.\n# (default: true)",
+    ),
+    (
+        "defaultAgent",
+        "# The agent a new chat starts with: \"atlas-agent\" for Atlas Agent, or the id\n# of an installed ACP agent, such as \"claude-code\". An agent that isn't\n# installed falls back to Atlas Agent. (default: \"atlas-agent\") A project can\n# override it in its own .atlas/config.toml.",
+    ),
+    (
+        "chatWidth",
+        "# How wide the conversation and the composer may grow: \"normal\" (760 pixels),\n# \"wide\" (1080 pixels) or \"full\" (the whole panel). (default: \"normal\")",
+    ),
+    (
+        "chatCodeWrap",
+        "# Wrap long lines in a chat's code blocks. Off: they keep their lines and\n# scroll sideways. (default: true)",
+    ),
+    (
+        "sidebarSort",
+        "# The order of chats in the sidebar: \"recent\" puts the chat with the latest\n# activity first, \"created\" the one started most recently. (default: \"recent\")",
+    ),
+    (
+        "timeFormat",
+        "# The clock for every time of day Atlas shows: \"12h\", \"24h\", or \"system\" to\n# follow your system's region settings. (default: \"system\")",
+    ),
+    (
+        "uiFontFamily",
+        "# The font for Atlas's interface and chats, as a CSS font-family list such as\n# \"Inter, sans-serif\". Empty uses the system font. A font that isn't installed\n# falls through to the next one in the list. (default: \"\")",
+    ),
+    (
+        "codeFontFamily",
+        "# The font for the editor, the terminal and code in chats, as a CSS\n# font-family list such as \"JetBrains Mono, monospace\". Empty uses Atlas's\n# default monospace fonts. (default: \"\")",
+    ),
+    (
+        "editorFontSize",
+        "# The code editor's font size, in pixels. The interface zoom scales it along\n# with everything else. (default: 13)",
+    ),
+    (
+        "terminalFontSize",
+        "# The terminal's font size, in pixels. The interface zoom scales it along with\n# everything else. (default: 13)",
+    ),
+    (
+        "diffIgnoreWhitespace",
+        "# Leave out changes that are only whitespace in diffs you read: a file's diff,\n# a commit, and a chat's changes. Diffs you stage from always show every\n# change, since a patch without the whitespace no longer applies. (default:\n# false)",
+    ),
+    (
+        "diffFilesCollapsed",
+        "# Open a diff of several files, such as a commit or your changes, with each\n# file collapsed to its header. Off: every file starts expanded. (default:\n# false)",
+    ),
+    (
+        "diffPalette",
+        "# The colours for added and removed lines: \"theme\" uses the theme's green and\n# red, \"blue-orange\" uses its blue and orange, which stay distinct with\n# red-green colour blindness. (default: \"theme\")",
+    ),
+    (
+        "linkTarget",
+        "# Where a link clicked in a chat or the terminal opens: \"system\" in your\n# default browser, \"atlas\" in a browser tab inside Atlas. (default: \"system\")",
+    ),
+    (
+        "browserSearchEngine",
+        "# What the built-in browser's address bar searches with when what you type\n# isn't an address. (default: \"google\")",
+    ),
 ];
 
 /// The keys a project's `.atlas/config.toml` may override (`project` in the
@@ -189,6 +253,7 @@ pub const PROJECT_SETTING_KEYS: &[&str] = &[
     "agentCodeTools",
     "memoryDreams",
     "memoryRepoMirror",
+    "defaultAgent",
 ];
 
 /// Of those, the booleans a project may only turn off (`project = "tighten"`):

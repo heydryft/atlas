@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { createSelectors } from "@/lib/create-selectors";
 import { applyUiScale } from "@/features/settings/lib/ui-scale";
+import {
+  applyDisplaySettings,
+  displaySettingsChanged,
+} from "@/features/settings/lib/display-settings";
 import { applyConfiguredTheme } from "@/features/theme/stores/theme-store";
 import { appearanceForMode, getActiveTheme } from "@/features/theme/apply-theme";
 import { THEME_APPLIED_EVENT } from "@/features/theme/theme-values";
@@ -111,6 +115,7 @@ function applySettingsSideEffects(next: AppSettings, previous: AppSettings): voi
     );
   }
   if (next.uiScale !== previous.uiScale) applyUiScale(next.uiScale);
+  if (displaySettingsChanged(next, previous)) applyDisplaySettings(next);
   if (
     next.theme !== previous.theme ||
     next.themeMode !== previous.themeMode ||
@@ -246,6 +251,7 @@ export const useSettingsStore = createSelectors(
         // Re-apply the persisted interface zoom (needs the Tauri WebView API,
         // so it can only run here, not in the pre-mount boot path).
         applyUiScale(settings.uiScale);
+        applyDisplaySettings(settings);
         // Resolve and apply the one persisted theme across chrome, editor,
         // terminal, diffs and syntax variables.
         applyConfiguredTheme(settings.theme, settings.themeMode, settings.themeOverrides);

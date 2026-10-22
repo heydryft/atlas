@@ -16,7 +16,31 @@ import {
   SettingsRow,
   SettingsSection,
 } from "../layout/settings-layout";
-import { SettingSwitch } from "../layout/setting-controls";
+import {
+  SettingSelect,
+  SettingStepper,
+  SettingSwitch,
+  SettingText,
+} from "../layout/setting-controls";
+
+const TIME_FORMATS = [
+  { value: "system", label: "System" },
+  { value: "12h", label: "12-hour" },
+  { value: "24h", label: "24-hour" },
+] as const;
+
+const LINK_TARGETS = [
+  { value: "system", label: "Your browser" },
+  { value: "atlas", label: "Atlas" },
+] as const;
+
+const SEARCH_ENGINES = [
+  { value: "google", label: "Google" },
+  { value: "duckduckgo", label: "DuckDuckGo" },
+  { value: "bing", label: "Bing" },
+  { value: "brave", label: "Brave Search" },
+  { value: "kagi", label: "Kagi" },
+] as const;
 import { ConfigErrorBanner } from "./config-file";
 
 export function GeneralPage() {
@@ -30,7 +54,7 @@ export function GeneralPage() {
   return (
     <SettingsPage
       title="General"
-      description="Interface, the app icon, and how Atlas treats your project's files."
+      description="Interface, fonts, confirmations, the built-in browser, and how Atlas treats your project's files."
     >
       <ConfigErrorBanner />
 
@@ -57,6 +81,60 @@ export function GeneralPage() {
             disabled={isWindows}
             disabledReason="Not available on Windows yet."
             control={<SettingSwitch setting="keepAwakeWhileRunning" />}
+          />
+          <SettingsRow
+            setting="timeFormat"
+            control={<SettingSelect setting="timeFormat" options={TIME_FORMATS} />}
+          />
+        </SettingsGroup>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Fonts"
+        description="A font list falls through to the next font when one isn't installed."
+      >
+        <SettingsGroup>
+          <SettingsRow
+            setting="uiFontFamily"
+            control={<SettingText setting="uiFontFamily" placeholder="System font" />}
+          />
+          <SettingsRow
+            setting="codeFontFamily"
+            control={<SettingText setting="codeFontFamily" placeholder="SF Mono, JetBrains Mono" />}
+          />
+          <SettingsRow
+            setting="editorFontSize"
+            control={<SettingStepper setting="editorFontSize" unit="px" />}
+          />
+          <SettingsRow
+            setting="terminalFontSize"
+            control={<SettingStepper setting="terminalFontSize" unit="px" />}
+          />
+        </SettingsGroup>
+      </SettingsSection>
+
+      <SettingsSection title="Confirmations">
+        <SettingsGroup>
+          <SettingsRow
+            setting="confirmDeleteChat"
+            control={<SettingSwitch setting="confirmDeleteChat" />}
+          />
+          <SettingsRow
+            setting="confirmQuitWhileRunning"
+            control={<SettingSwitch setting="confirmQuitWhileRunning" />}
+          />
+        </SettingsGroup>
+      </SettingsSection>
+
+      <SettingsSection title="Browser">
+        <SettingsGroup>
+          <SettingsRow
+            setting="linkTarget"
+            control={<SettingSelect setting="linkTarget" options={LINK_TARGETS} />}
+          />
+          <SettingsRow
+            setting="browserSearchEngine"
+            control={<SettingSelect setting="browserSearchEngine" options={SEARCH_ENGINES} />}
           />
         </SettingsGroup>
       </SettingsSection>

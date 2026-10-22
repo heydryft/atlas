@@ -212,6 +212,84 @@ export interface AppSettings {
    * ignored.
    */
   favoriteModels: string[];
+  /**
+   * Ask before deleting a chat from the sidebar or the history. A deleted chat's transcript
+   * stays with its agent, but Atlas forgets the chat. Archiving never asks, because it can be
+   * undone.
+   */
+  confirmDeleteChat: boolean;
+  /**
+   * Ask before quitting while an agent is in the middle of a turn, since quitting stops it.
+   * Quitting again while the question is open quits anyway.
+   */
+  confirmQuitWhileRunning: boolean;
+  /**
+   * The agent a new chat starts with: "atlas-agent" for Atlas Agent, or the id of an installed
+   * ACP agent, such as "claude-code". An agent that isn't installed falls back to Atlas Agent.
+   */
+  defaultAgent: string;
+  /**
+   * How wide the conversation and the composer may grow: "normal" (760 pixels), "wide" (1080
+   * pixels) or "full" (the whole panel).
+   */
+  chatWidth: "normal" | "wide" | "full";
+  /** Wrap long lines in a chat's code blocks. Off: they keep their lines and scroll sideways. */
+  chatCodeWrap: boolean;
+  /**
+   * The order of chats in the sidebar: "recent" puts the chat with the latest activity first,
+   * "created" the one started most recently.
+   */
+  sidebarSort: "recent" | "created";
+  /**
+   * The clock for every time of day Atlas shows: "12h", "24h", or "system" to follow your
+   * system's region settings.
+   */
+  timeFormat: "system" | "12h" | "24h";
+  /**
+   * The font for Atlas's interface and chats, as a CSS font-family list such as "Inter,
+   * sans-serif". Empty uses the system font. A font that isn't installed falls through to the
+   * next one in the list.
+   */
+  uiFontFamily: string;
+  /**
+   * The font for the editor, the terminal and code in chats, as a CSS font-family list such as
+   * "JetBrains Mono, monospace". Empty uses Atlas's default monospace fonts.
+   */
+  codeFontFamily: string;
+  /**
+   * The code editor's font size, in pixels. The interface zoom scales it along with everything
+   * else.
+   */
+  editorFontSize: number;
+  /**
+   * The terminal's font size, in pixels. The interface zoom scales it along with everything
+   * else.
+   */
+  terminalFontSize: number;
+  /**
+   * Leave out changes that are only whitespace in diffs you read: a file's diff, a commit, and
+   * a chat's changes. Diffs you stage from always show every change, since a patch without the
+   * whitespace no longer applies.
+   */
+  diffIgnoreWhitespace: boolean;
+  /**
+   * Open a diff of several files, such as a commit or your changes, with each file collapsed to
+   * its header. Off: every file starts expanded.
+   */
+  diffFilesCollapsed: boolean;
+  /**
+   * The colours for added and removed lines: "theme" uses the theme's green and red,
+   * "blue-orange" uses its blue and orange, which stay distinct with red-green colour
+   * blindness.
+   */
+  diffPalette: "theme" | "blue-orange";
+  /**
+   * Where a link clicked in a chat or the terminal opens: "system" in your default browser,
+   * "atlas" in a browser tab inside Atlas.
+   */
+  linkTarget: "system" | "atlas";
+  /** What the built-in browser's address bar searches with when what you type isn't an address. */
+  browserSearchEngine: "google" | "duckduckgo" | "bing" | "brave" | "kagi";
 }
 
 export type SettingKey = keyof AppSettings;
@@ -260,6 +338,22 @@ export const DEFAULT_SETTINGS: AppSettings = {
   notifyDisabledKinds: [],
   notifyAgentMinDurationMs: 0,
   favoriteModels: [],
+  confirmDeleteChat: true,
+  confirmQuitWhileRunning: true,
+  defaultAgent: "atlas-agent",
+  chatWidth: "normal",
+  chatCodeWrap: true,
+  sidebarSort: "recent",
+  timeFormat: "system",
+  uiFontFamily: "",
+  codeFontFamily: "",
+  editorFontSize: 13,
+  terminalFontSize: 13,
+  diffIgnoreWhitespace: false,
+  diffFilesCollapsed: false,
+  diffPalette: "theme",
+  linkTarget: "system",
+  browserSearchEngine: "google",
 };
 
 export type SettingType =
@@ -283,7 +377,8 @@ export const SETTINGS_PAGES = [
   {
     id: "general",
     title: "General",
-    description: "Interface, the app icon, and how Atlas treats your project's files.",
+    description:
+      "Interface, fonts, confirmations, the built-in browser, and how Atlas treats your project's files.",
   },
   {
     id: "appearance",
@@ -298,7 +393,7 @@ export const SETTINGS_PAGES = [
   {
     id: "chat",
     title: "Chat",
-    description: "The composer, switching agents, and what Atlas Agent may do.",
+    description: "New chats, the composer, layout, switching agents, and what Atlas Agent may do.",
   },
   {
     id: "memory",
@@ -313,7 +408,7 @@ export const SETTINGS_PAGES = [
   {
     id: "source-control",
     title: "Source Control",
-    description: "Git in the editor and in the background.",
+    description: "Git in the editor, diffs, and in the background.",
   },
   {
     id: "privacy",
@@ -770,5 +865,160 @@ export const SETTINGS_REGISTRY: readonly SettingMeta[] = [
     title: "Favorite models",
     summary: "Models you starred in the composer's model picker.",
     setIn: "the star in the composer's model picker",
+  },
+  {
+    key: "confirmDeleteChat",
+    type: "boolean",
+    status: "live",
+    page: "general",
+    section: "Confirmations",
+    title: "Confirm before deleting a chat",
+    summary: "Ask first when you delete a chat from the sidebar or history.",
+  },
+  {
+    key: "confirmQuitWhileRunning",
+    type: "boolean",
+    status: "live",
+    page: "general",
+    section: "Confirmations",
+    title: "Confirm before quitting while an agent is running",
+    summary: "Ask first when you quit Atlas with an agent in the middle of a turn.",
+  },
+  {
+    key: "defaultAgent",
+    type: "string",
+    status: "live",
+    page: "chat",
+    section: "New chats",
+    title: "Default agent",
+    summary: "The agent a new chat starts with.",
+    project: true,
+  },
+  {
+    key: "chatWidth",
+    type: "enum",
+    status: "live",
+    page: "chat",
+    section: "Layout",
+    title: "Chat width",
+    summary: "How wide the conversation and the composer may grow.",
+    values: ["normal", "wide", "full"],
+  },
+  {
+    key: "chatCodeWrap",
+    type: "boolean",
+    status: "live",
+    page: "chat",
+    section: "Layout",
+    title: "Wrap code in chat",
+    summary: "Wrap long lines in a chat's code blocks instead of scrolling sideways.",
+  },
+  {
+    key: "sidebarSort",
+    type: "enum",
+    status: "live",
+    page: "chat",
+    section: "Layout",
+    title: "Sort chats by",
+    summary: "Order the sidebar's chats by their latest activity or by when they started.",
+    values: ["recent", "created"],
+  },
+  {
+    key: "timeFormat",
+    type: "enum",
+    status: "live",
+    page: "general",
+    section: "Interface",
+    title: "Time format",
+    summary: "Show times on a 12-hour or 24-hour clock, or as your system does.",
+    values: ["system", "12h", "24h"],
+  },
+  {
+    key: "uiFontFamily",
+    type: "string",
+    status: "live",
+    page: "general",
+    section: "Fonts",
+    title: "Interface font",
+    summary: "The font for Atlas's interface and chats. Empty uses the system font.",
+  },
+  {
+    key: "codeFontFamily",
+    type: "string",
+    status: "live",
+    page: "general",
+    section: "Fonts",
+    title: "Code font",
+    summary: "The font for the editor, the terminal and code in chats. Empty uses the default.",
+  },
+  {
+    key: "editorFontSize",
+    type: "integer",
+    status: "live",
+    page: "general",
+    section: "Fonts",
+    title: "Editor font size",
+    summary: "The code editor's font size, in pixels.",
+    min: 8,
+    max: 32,
+  },
+  {
+    key: "terminalFontSize",
+    type: "integer",
+    status: "live",
+    page: "general",
+    section: "Fonts",
+    title: "Terminal font size",
+    summary: "The terminal's font size, in pixels.",
+    min: 8,
+    max: 32,
+  },
+  {
+    key: "diffIgnoreWhitespace",
+    type: "boolean",
+    status: "live",
+    page: "source-control",
+    section: "Diffs",
+    title: "Hide whitespace changes",
+    summary: "Leave out lines that only changed whitespace when you review a diff.",
+  },
+  {
+    key: "diffFilesCollapsed",
+    type: "boolean",
+    status: "live",
+    page: "source-control",
+    section: "Diffs",
+    title: "Start files collapsed",
+    summary: "Open a diff of several files with each one collapsed to its header.",
+  },
+  {
+    key: "diffPalette",
+    type: "enum",
+    status: "live",
+    page: "source-control",
+    section: "Diffs",
+    title: "Diff colours",
+    summary: "Use the theme's green and red for changes, or blue and orange.",
+    values: ["theme", "blue-orange"],
+  },
+  {
+    key: "linkTarget",
+    type: "enum",
+    status: "live",
+    page: "general",
+    section: "Browser",
+    title: "Open links in",
+    summary: "Open links from chats and the terminal in your browser or in Atlas's.",
+    values: ["system", "atlas"],
+  },
+  {
+    key: "browserSearchEngine",
+    type: "enum",
+    status: "live",
+    page: "general",
+    section: "Browser",
+    title: "Search engine",
+    summary: "What the built-in browser searches with when you type words, not an address.",
+    values: ["google", "duckduckgo", "bing", "brave", "kagi"],
   },
 ];
