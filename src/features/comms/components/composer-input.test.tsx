@@ -246,6 +246,23 @@ describe("ComposerInput", () => {
     expect(text(handle)).toBe("```\nsee <@u_grace>\n```");
   });
 
+  it("leaves a line alone while an input method is composing, and pills it after", async () => {
+    const { editor, container, handle } = mount("");
+    const input = (editor.view as unknown as { input: { composing: boolean } }).input;
+    act(() => {
+      input.composing = true;
+      editor.view.dispatch(editor.state.tr.insertText("hi <@u_grace> ").setMeta("composition", 1));
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(chips(container)).toEqual([]);
+    act(() => {
+      input.composing = false;
+      editor.view.dom.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true }));
+    });
+    await waitFor(() => expect(chips(container)).toEqual(["@Grace Hopper"]));
+    expect(text(handle)).toBe("hi <@u_grace> ");
+  });
+
   it("keeps a pill through undo and redo", async () => {
     const { editor, container, handle } = mount("hi <@u_grace>");
     await waitFor(() => expect(chips(container)).toHaveLength(1));

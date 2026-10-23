@@ -102,6 +102,15 @@ describe("what becomes a pill", () => {
     expect(pills("```\n<@u_grace>\n```\nafter <@u_grace>")).toEqual([{ userId: "u_grace" }]);
   });
 
+  it("reads fences the way the renderer's CommonMark does", () => {
+    // An info string cannot close a fence: ```js inside one is code.
+    expect(pills("```\n```js\n<@u_grace>\n```")).toEqual([]);
+    // Tilde fences count, and a backtick line does not close one.
+    expect(pills("~~~\n<@u_grace>\n```\n<@u_grace>\n~~~")).toEqual([]);
+    // A shorter run does not close a longer fence.
+    expect(pills("````\n```\n<@u_grace>\n````\nafter <@u_grace>")).toEqual([{ userId: "u_grace" }]);
+  });
+
   it("not an @ inside a word", () => {
     expect(pills("email@here.com and a@channel")).toEqual([]);
   });

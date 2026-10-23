@@ -17,7 +17,7 @@
 import type { JSONContent } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 
-import type { ComposerSerializer } from "@/components/composer/composer-doc";
+import { FenceTracker, type ComposerSerializer } from "@/components/composer/composer-doc";
 import { BROADCAST_SOURCE, MENTION_SOURCE } from "../types";
 import type { OrgMemberProfile } from "../types";
 
@@ -39,11 +39,13 @@ export function commsMentionText(data: CommsMentionData): string {
 }
 
 const SCANNER = new RegExp(`${MENTION_SOURCE}|${BROADCAST_SOURCE}`, "g");
-const FENCE = /^\s*```/;
+const MAY_BE_FENCE = /^ {0,3}(?:```|~~~)/;
 
-/** Whether a line opens or closes a code fence. */
-export function isFenceLine(line: string): boolean {
-  return FENCE.test(line);
+/** Whether a line could open or close a code fence. Cheap, and true of every
+ *  line that does: what decides whether a change can move fences. Whether it
+ *  does is `FenceTracker`'s call, with the lines above it. */
+export function mayBeFenceLine(line: string): boolean {
+  return MAY_BE_FENCE.test(line);
 }
 
 /** The `[from, to)` spans of one line that are inline code. */
@@ -67,8 +69,8 @@ export interface PillMatch {
 }
 
 /**
- * The pills one line holds. `fenced` is whether the line sits inside a code
- * fence — the caller knows the lines above it. A scanner rather than a
+ * The pills one line holds. `fenced` is whether the line is fence markup or
+ * sits inside a fence (`FenceTracker`, fed the lines above it). A scanner rather than a
  * markdown parse: getting it slightly wrong costs a pill that should have been
  * plain text, never a wrong message.
  */
@@ -77,7 +79,7 @@ export function pillsInLine(
   fenced: boolean,
   members: ReadonlyMap<string, OrgMemberProfile>,
 ): PillMatch[] {
-  if (fenced || isFenceLine(line) || !line.includes("@")) return [];
+  if (fenced || !line.includes("@")) return [];
   const code = inlineCode(line);
   const out: PillMatch[] = [];
   SCANNER.lastIndex = 0;
@@ -124,12 +126,8 @@ export function commsSerializer(
   return {
     tokenize(lines) {
       const members = getMembers();
-      let fenced = false;
-      return lines.map((line) => {
-        const content = tokenizeLine(line, fenced, members);
-        if (isFenceLine(line)) fenced = !fenced;
-        return content;
-      });
+      const fences = new FenceTracker();
+      return lines.map((line) => tokenizeLine(line, fences.line(line), members));
     },
     chipText: (node: PMNode) => commsMentionText(node.attrs.data as CommsMentionData),
   };

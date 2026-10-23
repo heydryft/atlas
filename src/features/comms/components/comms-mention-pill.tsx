@@ -34,12 +34,13 @@ import {
 import { NodeViewWrapper } from "@tiptap/react";
 
 import { createChipNode, type ComposerChipViewProps } from "@/components/composer/composer-chip";
+import { FenceTracker } from "@/components/composer/composer-doc";
 import { PROGRAMMATIC } from "@/components/composer/composer-editor";
 import { cn } from "@/lib/utils";
 import {
   COMMS_MENTION,
   commsMentionText,
-  isFenceLine,
+  mayBeFenceLine,
   pillsInLine,
   type CommsMentionData,
   type MentionDirectory,
@@ -106,12 +107,21 @@ function CommsMentionView({ data, selected }: ComposerChipViewProps<CommsMention
   );
 }
 
-/** Whether a line opens or closes a fence. A fence line starts with its
- *  backticks, so the first text run is all there is to read — cheap enough to
- *  ask of every line on every keystroke. */
+/** Whether a line could be fence markup. Fence markup starts the line, so
+ *  the first text run is all there is to read: cheap enough to ask of every
+ *  line on every keystroke. */
 function blockIsFence(block: PMNode): boolean {
   const first = block.firstChild;
-  return !!first?.isText && isFenceLine(first.text ?? "");
+  return !!first?.isText && mayBeFenceLine(first.text ?? "");
+}
+
+/** What `FenceTracker` needs of a line: its first text run, and a stand-in
+ *  for anything after it, since a fence line with a pill on it closes
+ *  nothing. */
+function fenceText(block: PMNode): string {
+  const first = block.firstChild;
+  if (!first?.isText) return block.childCount > 0 ? "\uFFFC" : "";
+  return block.childCount > 1 ? `${first.text ?? ""}\uFFFC` : (first.text ?? "");
 }
 
 /** Whether a line could hold a pill, or holds one now. */
@@ -182,20 +192,19 @@ function syncPills(
   if (indexes.size === 0) return null;
   const head = selection.head;
   let tr: Transaction | null = null;
-  let fenced = false;
+  const fences = new FenceTracker();
   let pos = 0;
   const last = Math.max(...indexes);
   for (let i = 0; i <= last; i++) {
     const block = doc.child(i);
     const start = pos + 1;
     pos += block.nodeSize;
-    const wasFenced = fenced;
-    if (blockIsFence(block)) fenced = !fenced;
+    const fenced = fences.line(fenceText(block));
     if (!indexes.has(i)) continue;
     const { text, posAt } = lineText(block, start);
     const caret = head >= start && head <= start + block.content.size ? head : -1;
     const have = currentPills(block);
-    const wanted = pillsInLine(text, wasFenced, members).filter(
+    const wanted = pillsInLine(text, fenced, members).filter(
       (p) =>
         // A broadcast the caret is still at the end of stays text, unless it
         // already is a pill (a Backspace over the space after it).
@@ -252,11 +261,38 @@ export const CommsMentionPills = Extension.create<CommsMentionPillsOptions>({
 
   addProseMirrorPlugins() {
     const getMembers = () => this.options.getMembers();
+    const editor = this.editor;
     return [
       new Plugin({
         key: new PluginKey("atlasCommsMentionPills"),
+        props: {
+          handleDOMEvents: {
+            // The lines skipped while composing get their pills once the
+            // input method commits. After the event, so the view has read
+            // the committed text.
+            compositionend: (view) => {
+              window.setTimeout(() => {
+                if (view.isDestroyed || view.composing) return;
+                const all = new Set<number>();
+                for (let i = 0; i < view.state.doc.childCount; i++) all.add(i);
+                const tr = syncPills(view.state, all, getMembers());
+                if (tr) view.dispatch(tr);
+              }, 0);
+              return false;
+            },
+          },
+        },
         appendTransaction(transactions, oldState, newState) {
           if (!transactions.some((tr) => tr.docChanged)) return null;
+          // Never rewrite a line an input method is composing in: replacing
+          // its text would cancel the composition. `compositionend` catches
+          // up.
+          if (
+            editor.view.composing ||
+            transactions.some((tr) => tr.getMeta("composition") != null)
+          ) {
+            return null;
+          }
           // A whole-document set already came through the serializer, and
           // undo/redo restores a document that was already in step.
           if (transactions.some((tr) => tr.getMeta(PROGRAMMATIC) || tr.getMeta("history$"))) {
